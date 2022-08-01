@@ -1,0 +1,89 @@
+<div class="container-fluid">
+    <div class="panel panel-default">
+        <div class="pabel-body panel-warehouse-actions">
+            <div class="timestamp-wrapper">
+                <span class="timestamp-text">{{ hrx_m_warehouse_update_text }}</span>
+                <span class="timestamp-date">
+                    {% if warehouse_last_update %}
+                        {{ warehouse_last_update }}
+                    {% else %}
+                        {{ hrx_m_warehouse_updated_never }}
+                    {% endif %}
+                </span>
+            </div>
+            <div>
+                <button type="button" data-refresh-warehouses class="btn btn-default btn-hrx with-text"><i class="fa fa-refresh"></i>{{ hrx_m_btn_refresh_warehouses }}</button>
+            </div>
+        </div>
+    </div>
+
+    {% if not default_warehouse.id %}
+    <div class="alert alert-danger" data-no-default-warehouse>{{ hrx_m_alert_no_default_warehouse }}</div>
+    {% endif %}
+
+    {% for warehouse in warehouses %}
+        <div class="panel panel-default panel-warehouse">
+            <div class="panel-heading">
+                <img src="view/image/hrx_m/warehouse.svg" alt="">
+                <h3 class="panel-title">{{ warehouse.name }}</h3>
+            </div>
+
+            <div class="panel-body form-horizontal">
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">{{ hrx_m_label_warehouse_id }}</label>
+                    <div class="col-sm-10">
+                        <input type="text" value="{{ warehouse.id }}" class="form-control" disabled>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">{{ hrx_m_label_warehouse_title }}</label>
+                    <div class="col-sm-10">
+                        <input type="text" value="{{ warehouse.name }}" class="form-control" disabled>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">{{ hrx_m_label_warehouse_country_code }}</label>
+                    <div class="col-sm-10">
+                        <input type="text" value="{{ warehouse.country }}" class="form-control" disabled>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">{{ hrx_m_label_warehouse_zip }}</label>
+                    <div class="col-sm-10">
+                        <input type="text" value="{{ warehouse.zip }}" class="form-control" disabled>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">{{ hrx_m_label_warehouse_address }}</label>
+                    <div class="col-sm-10">
+                        <input type="text" value="{{ warehouse.address }}" class="form-control" disabled>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">{{ hrx_m_radio_text_set_default }}</label>
+                    <div class="col-sm-10">
+                        <label class="form-control hrx-checkbox-wrapper">
+                            <input type="checkbox" name="hrx_m_default_warehouse" class="form-control" 
+                                data-warehouse-id="{{ warehouse.id }}"
+                                {% if warehouse.is_default%}checked{% endif %}>
+                        </label>
+                    </div>
+                </div>
+
+            </div>
+        </div> <!-- Panel -->
+    {% else %}
+        <div class="alert alert-info">{{ hrx_m_alert_update_warehouse_list }}</div>
+    {% endfor %}
+
+    <div class="row warehouse-paginator-wrapper">
+        <div class="col-sm-12 text-center">
+            {{ warehouse_pagination }}
+        </div>
+    </div>
+</div>

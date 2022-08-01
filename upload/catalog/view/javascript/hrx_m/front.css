@@ -1,0 +1,17 @@
+.tmjs-hrx-theme {
+    --highlight-color: #242121;
+    --muted-highlight-color: #fd981a;
+    --white-color: #fff;
+    --selected-background: var(--highlight-color);
+    --open-modal-btn-background: var(--highlight-color);
+    --open-modal-btn-text-color: var(--white-color);
+    --overlay-background: rgba(0, 0, 0, 0.7);
+    --overlay-text-color: var(--white-color);
+    --geolocation-text-color: var(--highlight-color);
+    --search-input-background: var(--white-color);
+    --search-btn-background: var(--highlight-color);
+    --active-background: var(--highlight-color);
+    --active-text-color: var(--white-color);
+    --terminal-comment-text-color: var(--muted-highlight-color);
+    --modal-close-color: #242121;
+}

@@ -1,0 +1,111 @@
+<link rel="stylesheet" href="view/javascript/hrx_m/admin.css">
+{{ header }}
+{{ column_left }}
+
+<div id="content" class="hrx_m_content">
+    <div class="container-fluid page-header">
+        <div class="hrx_m_manifest-header">
+            <h1><img src="view/image/hrx_m/logo-hrx.svg" alt="Logo"></h1>
+            <ul class="breadcrumb">
+                {% for breadcrumb in breadcrumbs %}
+                <li><a href="{{ breadcrumb['href'] }}">{{ breadcrumb['text'] }}</a></li>
+                {% endfor %}
+            </ul>
+            <div id="header-action-buttons" class="hrx_m_manifest-header-actions">
+                <button type="button" data-toggle="tooltip" title="" 
+                    onclick="$('#filter-order').toggleClass('hidden-sm hidden-xs');" class="btn btn-default hidden-md hidden-lg" data-original-title="{{ hrx_m_title_filters }}">
+                    <i class="fa fa-filter"></i>
+                </button>
+                {# <a href="#" class="btn btn-hrx_m hrx_m-btn-order-action"
+                    data-action="printLabels"
+                    data-original-title="{{ hrx_m_tooltip_print_labels }}" data-toggle="tooltip"
+                >
+                    <i class="fa fa-print"></i>
+                    <div class="mijora-bs5-spinner-border hidden"></div>
+                </a>
+                <a href="#" class="btn btn-hrx_m hrx_m-btn-order-action"
+                    data-action="createManifest"
+                    data-original-title="{{ hrx_m_tooltip_create_manifest }}" data-toggle="tooltip"
+                >
+                    <i class="fa fa-file-pdf-o"></i>
+                    <div class="mijora-bs5-spinner-border hidden"></div>
+                </a>
+                <a href="#" class="btn btn-hrx_m hrx_m-btn-order-action"
+                    data-action="callCourier"
+                    data-original-title="{{ hrx_m_tooltip_call_courier }}" data-toggle="tooltip"
+                >
+                    <i class="fa fa-truck"></i>
+                    <div class="mijora-bs5-spinner-border hidden"></div>
+                </a> #}
+            </div>
+        </div>
+    </div>
+
+    <div class="container-fluid">
+        <div class="row">
+            <div id="filter-order" class="col-md-3 col-md-push-9 col-sm-12 hidden-sm hidden-xs">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h3 class="panel-title"><i class="fa fa-filter"></i> {{ hrx_m_title_filters }}</h3>
+                    </div>
+
+                    <div class="panel-body">
+                        <div class="form-group">
+                            <label class="control-label" for="input-order-id">{{ hrx_m_label_order_id }}</label>
+                            <input type="text" name="filter_order_id" value="" id="input-order-id" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="input-customer">{{ hrx_m_label_customer }}</label>
+                            <input type="text" name="filter_customer" value="" id="input-customer" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="input-hrx-id">{{ hrx_m_label_hrx_id }}</label>
+                            <input type="text" name="filter_hrx_id" value="" id="input-hrx-id" class="form-control" />
+                        </div>
+                        <div class="form-group">
+                            <label class="control-label" for="input-is_registered">{{ hrx_m_label_is_registered }}</label>
+                            <select name="filter_is_registered" id="input-is_registered" class="form-control">
+                                <option value="0">-</option>
+                                <option value="1">{{ hrx_m_generic_no }}</option>
+                                <option value="2">{{ hrx_m_generic_yes }}</option>
+                            </select>
+                        </div>
+                        {# <div class="form-group">
+                            <label class="control-label" for="input-has-manifest">{{ hrx_m_label_has_manifest }}</label>
+                            <select name="filter_has_manifest" id="input-has-manifest" class="form-control">
+                                <option value="0">-</option>
+                                <option value="1">{{ hrx_m_generic_no }}</option>
+                                <option value="2">{{ hrx_m_generic_yes }}</option>
+                            </select>
+                        </div> #}
+                        <div class="form-group">
+                            <label class="control-label" for="input-order-status">{{ hrx_m_label_order_status_id }}</label>
+                            <select name="filter_order_status_id" id="input-order-status" class="form-control">
+                                <option value="0">-</option>
+                                {% for order_status in order_statuses %}
+                                    <option value="{{ order_status.order_status_id }}">{{ order_status.name }}</option>
+                                {% endfor %}            
+                            </select>
+                        </div>
+
+                        <div class="form-group text-right">
+                            <button type="button" data-btn-filter class="btn btn-default"><i class="fa fa-filter"></i> {{ hrx_m_generic_btn_filter }}</button>
+                        </div>
+                    </div>
+                </div>
+            </div> {# filter end #}
+
+            <div id="manifest_list" class="col-md-9 col-md-pull-3 col-sm-12">
+                {{ partial_manifest_list }}
+            </div> {# results end #}
+        </div> {# row end #}
+    </div> {# container end #}
+</div> {# content end #}
+
+<script>
+    const HRX_M_MANIFEST_DATA = {{ hrx_m_data|json_encode }};
+</script>
+<script src="{{ mijora_common_js_path }}"></script>
+<script src="view/javascript/hrx_m/manifest.js"></script>
+
+{{ footer }} 

@@ -1,0 +1,50 @@
+{
+    "packages": [
+        {
+            "name": "hrx/api-lib",
+            "version": "dev-main",
+            "version_normalized": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:mijora/hrx-api.git",
+                "reference": "91af6d490af0932ca848f8fe2786b2b2d55e2c34"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mijora/hrx-api/zipball/91af6d490af0932ca848f8fe2786b2b2d55e2c34",
+                "reference": "91af6d490af0932ca848f8fe2786b2b2d55e2c34",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-json": "*"
+            },
+            "time": "2022-07-11T12:52:10+00:00",
+            "default-branch": true,
+            "type": "library",
+            "installation-source": "dist",
+            "autoload": {
+                "psr-4": {
+                    "HrxApi\\": "src/"
+                }
+            },
+            "license": [
+                "#"
+            ],
+            "authors": [
+                {
+                    "name": "UAB Mijora",
+                    "email": "support@mijora.lt"
+                }
+            ],
+            "description": "Library for HRX Api",
+            "support": {
+                "source": "https://github.com/mijora/hrx-api/tree/main",
+                "issues": "https://github.com/mijora/hrx-api/issues"
+            },
+            "install-path": "../hrx/api-lib"
+        }
+    ],
+    "dev": true,
+    "dev-package-names": []
+}

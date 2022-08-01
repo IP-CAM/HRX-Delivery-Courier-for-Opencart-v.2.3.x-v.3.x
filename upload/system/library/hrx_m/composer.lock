@@ -1,0 +1,62 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "5d05debd5624aa42e4697f92fae0420d",
+    "packages": [
+        {
+            "name": "hrx/api-lib",
+            "version": "dev-main",
+            "source": {
+                "type": "git",
+                "url": "git@github.com:mijora/hrx-api.git",
+                "reference": "91af6d490af0932ca848f8fe2786b2b2d55e2c34"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/mijora/hrx-api/zipball/91af6d490af0932ca848f8fe2786b2b2d55e2c34",
+                "reference": "91af6d490af0932ca848f8fe2786b2b2d55e2c34",
+                "shasum": ""
+            },
+            "require": {
+                "ext-curl": "*",
+                "ext-json": "*"
+            },
+            "default-branch": true,
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "HrxApi\\": "src/"
+                }
+            },
+            "license": [
+                "#"
+            ],
+            "authors": [
+                {
+                    "name": "UAB Mijora",
+                    "email": "support@mijora.lt"
+                }
+            ],
+            "description": "Library for HRX Api",
+            "support": {
+                "source": "https://github.com/mijora/hrx-api/tree/main",
+                "issues": "https://github.com/mijora/hrx-api/issues"
+            },
+            "time": "2022-07-11T12:52:10+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "stable",
+    "stability-flags": {
+        "hrx/api-lib": 20
+    },
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": [],
+    "platform-dev": [],
+    "plugin-api-version": "2.3.0"
+}

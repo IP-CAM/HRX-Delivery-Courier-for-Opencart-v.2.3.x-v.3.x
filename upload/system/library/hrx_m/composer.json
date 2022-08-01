@@ -1,0 +1,16 @@
+{
+    "autoload": {
+        "psr-4": {
+            "Mijora\\HrxOpencart\\": "src/"
+        }
+    },
+    "require": {
+        "hrx/api-lib": "dev-main"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "git@github.com:mijora/hrx-api.git"
+        }
+    ]
+}

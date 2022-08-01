@@ -1,0 +1,153 @@
+body {
+    --mijora-loader-size: 5em;
+    --mijora-loader-weight: 0.5em;
+    --mijora-loader-color: #E82C2A;
+}
+
+.hrx_m_content button > * {
+    pointer-events: none;
+}
+
+.hrx_m_content button.with-text > i {
+    margin-right: 0.5em;
+}
+
+.hrx_m_content .btn-hrx {
+    background-color: #242121;
+    border-color: #030202;
+    color: #fff;
+}
+
+.panel-warehouse-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1em;
+    padding: 1em;
+}
+
+.panel-warehouse {
+    margin-bottom: 0;
+    border-bottom: 0;
+}
+
+.panel-warehouse > .panel-heading,
+.panel-manifests > .panel-heading {
+    display: flex;
+    align-items: center;
+    gap: 1em;
+}
+
+.warehouse-paginator-wrapper {
+    margin-top: 1em;
+}
+
+.hrx-checkbox-wrapper,
+.hrx-checkbox-wrapper:hover {
+    cursor: pointer;
+    border: none;
+    padding-left: 0;
+    box-shadow: none;
+}
+
+.hrx-delivery-points-loading {
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+}
+
+.delivery-point-disabled::before {
+    content: '\2716';
+    color: #FF0000;
+}
+
+.delivery-point-enabled::before {
+    content: '\2713';
+    color: #008000;
+}
+
+.hrx_m-actions-col {
+    display: flex;
+    gap: 0.5em;
+    align-items: center;
+    justify-content: flex-end;
+}
+
+[data-row-order-id] .hrx_m-actions-col {
+    flex-wrap: wrap;
+}
+
+.edit-price-modal {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    position: absolute;
+    width: 100%;
+    bottom: 0;
+    top: 0;
+    background-color: rgba(255, 255, 255, 0.8);
+}
+
+/* Manifest Page */
+.hrx_m_manifest-header {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+    gap: 1em;
+    margin-bottom: 1em;
+}
+
+.hrx_m_manifest-header > *,
+.hrx_m_manifest-header > h1 {
+    margin: 0;
+}
+
+.hrx_m_manifest-header-actions {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 1em;
+}
+
+/* common.js loaders */
+@keyframes mijora-bs5-spinner-border {
+    100% { transform: rotate(360deg) }
+}
+
+.loading {
+    position: relative;
+    overflow: hidden !important;
+}
+
+.mijora_loader {
+    display: none;
+    position: absolute;
+    inset: 0;
+    background-color: rgba(0,0,0,0.5);
+    color: var(--mijora-loader-color, #E82C2A);
+    z-index: 999;
+    align-items: center;
+    justify-content: center;
+}
+
+.loading > .mijora_loader {
+    display: flex;
+}
+
+/* bootstrap 5 spinner */
+.mijora-bs5-spinner-border {
+    display: inline-block;
+    width: var(--mijora-loader-size, 1em);
+    height: var(--mijora-loader-size, 1em);
+    border: var(--mijora-loader-weight, 0.15em) solid currentColor;
+    border-right-color: transparent;
+    border-radius: 50%;
+    -webkit-animation: .75s linear infinite mijora-bs5-spinner-border;
+    animation: 0.75s linear infinite mijora-bs5-spinner-border;
+}
+
+@media (min-width: 768px) {
+
+}

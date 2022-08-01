@@ -1,0 +1,39 @@
+<div class="panel panel-default panel-manifests">
+    <div class="panel-heading">
+        <img src="view/image/hrx_m/manifest-table.svg">
+        <h3 class="panel-title">{{ hrx_m_title_manifest_orders }}</h3>
+    </div>
+
+    <div class="panel-body">
+        <div class="table-responsive">
+            <table class="table table-bordered table-hover">
+                <thead>
+                    <tr>
+                        <td style="width: 1px;" class="text-center"><input id="check-all-input" type="checkbox"/></td>
+                        <td class="text-right">{{ hrx_m_manifest_col_order_id }}</td>
+                        <td class="text-left"> {{ hrx_m_manifest_col_customer }}</td>
+                        <td class="text-left"> {{ hrx_m_manifest_col_status }}</td>
+                        <td class="text-right">{{ hrx_m_manifest_col_hrx_order_id }}</td>
+                        {# <td class="text-right">{{ hrx_m_manifest_col_manifest_id }}</td> #}
+                        <td class="text-right">{{ hrx_m_manifest_col_action }}</td>
+                    </tr>
+                </thead>
+                <tbody id="hrx_m-manifest-orders">
+                    {% for order_row in order_rows %}
+                        {{ order_row }}
+                    {% else %}
+                    <tr>
+                        <td class="text-center" colspan="6">{{ hrx_m_manifest_orders_no_results }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <div class="row">
+            <div class="col-sm-12 text-center">
+                {{ manifest_list_pagination }}
+            </div>
+        </div>
+    </div>
+</div>

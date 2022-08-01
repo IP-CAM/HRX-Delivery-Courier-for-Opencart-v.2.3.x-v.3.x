@@ -1,0 +1,23 @@
+<tr data-row-order-id="{{ order.getOrderId() }}">
+    <td class="text-center">
+        <input type="checkbox" name="selected[]" value="{{ order.getOrderId() }}">
+        <input type="hidden" name="shipping_code[]" value="{{ order.getShippingCode(true) }}">
+    </td>
+    <td class="text-right">{{ order.getOrderId() }}</td>
+    <td class="text-left"><a target="_blank" href="{{ order_url }}&order_id={{ order.getOrderId() }}">{{ order.getCustomer() }}</a></td>
+    <td class="text-left">{{ order.getOrderStatus() }}</td>
+    <td class="text-right">{{ order.getHrxOrderId() }}</td>
+    {# <td class="text-left">{{ order.manifest_id > 0 ? order.manifest_id : '' }}</td> #}
+    <td>
+        <div class="hrx_m-actions-col">
+            {% if not order.getHrxOrderId() %}
+                <button data-register-order data-oc-order-id="{{ order.getOrderId() }}" class="btn btn-default">{{ hrx_m_btn_register_order }}</button>
+            {% else %}
+                {% if order.canPrintReturnLabel() %}
+                    <button data-print-label-return data-label-type="return" data-oc-order-id="{{ order.getOrderId() }}" class="btn btn-default">{{ hrx_m_btn_print_label_return }}</button>
+                {% endif %}
+                <button data-print-label data-label-type="shipment" data-oc-order-id="{{ order.getOrderId() }}" class="btn btn-default">{{ hrx_m_btn_print_label}}</button>
+            {% endif %}
+        </div>
+    </td>
+</tr>
