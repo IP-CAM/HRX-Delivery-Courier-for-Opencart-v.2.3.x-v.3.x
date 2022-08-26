@@ -37,16 +37,32 @@ try {
 
     /*** Delivery locations ***/
     echo 'Getting delivery locations...';
-    $delivery_locations = $api->getDeliveryLocations(1, 10);
+    $delivery_locations = $api->getCourierDeliveryLocations();
     echo ' Done.<br/>';
     debug_element('Delivery locations', $delivery_locations);
 
+    echo 'Preparing delivery location for receiver...';
+    $receiver_country = 'LT';
+    $receiver_delivery_location = array();
+    foreach ( $delivery_locations as $delivery_location ) {
+        if ( $delivery_location['country'] == $receiver_country ) {
+            $receiver_delivery_location = $delivery_location;
+        }
+    }
+    echo ' Done.<br/>';
+    debug_element('Delivery location for receiver', $receiver_delivery_location);
+
     /*** Create order ***/
     echo 'Building receiver...';
+    $receiver_country = 'LT';
     $receiver = new Receiver();
     $receiver->setName('Tester');
     $receiver->setEmail('test@test.ts');
-    $receiver->setPhone('58000000', $delivery_locations[0]['recipient_phone_regexp']);
+    $receiver->setPhone('60000000', $receiver_delivery_location['recipient_phone_regexp']);
+    $receiver->setAddress('Street 1');
+    $receiver->setPostcode('46123');
+    $receiver->setCity('Testuva');
+    $receiver->setCountry($receiver_country);
     echo ' Done.<br/>';
     debug_element('Receiver', $receiver);
 
@@ -64,8 +80,7 @@ try {
     echo 'Building order...';
     $order = new Order();
     $order->setPickupLocationId($pickup_locations[0]['id']);
-    $order->setDeliveryLocation($delivery_locations[0]['id']);
-    $order->setDeliveryKind('delivery_location');
+    $order->setDeliveryKind('courier');
     $order->setReceiver($receiver);
     $order->setShipment($shipment);
     $order_data = $order->prepareOrderData();

@@ -10,6 +10,7 @@ class Order
     /* Class variables */
     private $pickup_location_id;
     private $delivery_location_id;
+    private $delivery_kind;
     private $receiver;
     private $shipment;
 
@@ -51,6 +52,20 @@ class Order
     }
 
     /**
+     * Set delivery kind
+     * @since 1.0.2
+     * 
+     * @param (string) $delivery_kind - Delivery method. Can be one of: "delivery_location" or "courier".
+     * @return (object) - Edited this class object
+     */
+    public function setDeliveryKind( $delivery_kind )
+    {
+        $this->delivery_kind = $delivery_kind;
+
+        return $this;
+    }
+
+    /**
      * Set receiver
      * @since 1.0.0
      * 
@@ -87,7 +102,7 @@ class Order
     public function prepareOrderData()
     {
         if ( ! $this->pickup_location_id ) $this->errorMissingField('pickup_location_id');
-        if ( ! $this->delivery_location_id ) $this->errorMissingField('delivery_location_id');
+        //if ( ! $this->delivery_location_id ) $this->errorMissingField('delivery_location_id');
         if ( ! $this->receiver ) $this->errorMissingField('receiver');
         if ( ! $this->shipment ) $this->errorMissingField('shipment');
 
@@ -95,7 +110,12 @@ class Order
            'sender_reference' => $this->shipment->getReference(),
            'sender_comment' => $this->shipment->getComment(),
            'pickup_location_id' => $this->pickup_location_id,
-           'delivery_location_id' => $this->delivery_location_id,
+           'delivery_kind' => $this->delivery_kind,
+           'delivery_location_id' => $this->delivery_location_id, // If kind "delivery_location"
+           'delivery_location_zip' => $this->receiver->getPostcode(), // If kind "courier"
+           'delivery_location_city' => $this->receiver->getCity(), // If kind "courier"
+           'delivery_location_country' => $this->receiver->getCountry(), // If kind "courier"
+           'delivery_location_address' => $this->receiver->getAddress(), // If kind "courier"
            'length_cm' => $this->shipment->getLength(),
            'width_cm' => $this->shipment->getWidth(),
            'height_cm' => $this->shipment->getHeight(),

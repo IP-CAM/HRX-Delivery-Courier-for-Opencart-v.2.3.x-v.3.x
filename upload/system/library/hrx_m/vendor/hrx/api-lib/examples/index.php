@@ -73,6 +73,11 @@ try {
         $label = $api->getLabel($order_id);
     }
 
+    /*** Change order ready state**/
+    if ( $order_id ) {
+        $order_ready = $api->changeOrderReadyState($order_id, true);
+    }
+
     /*** Get order return label ***/
     if ( $order_id ) {
         $return_label = $api->getReturnLabel($order_id);

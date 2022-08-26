@@ -5,7 +5,7 @@
         'type' => 'library',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
-        'reference' => '41e31038287947564c279e956a599bee43a29340',
+        'reference' => 'c1ee369caaf42c9995ed84841d7e466093d71e27',
         'name' => '__root__',
         'dev' => true,
     ),
@@ -16,7 +16,7 @@
             'type' => 'library',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
-            'reference' => '41e31038287947564c279e956a599bee43a29340',
+            'reference' => 'c1ee369caaf42c9995ed84841d7e466093d71e27',
             'dev_requirement' => false,
         ),
         'hrx/api-lib' => array(
@@ -27,7 +27,7 @@
             'aliases' => array(
                 0 => '9999999-dev',
             ),
-            'reference' => '91af6d490af0932ca848f8fe2786b2b2d55e2c34',
+            'reference' => '4d95dafb894ba57eb1ddb4bc1665d0f90111c5c1',
             'dev_requirement' => false,
         ),
     ),

@@ -56,7 +56,7 @@ class API
     }
 
     /**
-     * Get delivery locations
+     * Get delivery locations for terminals
      * @since 1.0.0
      * 
      * @param (integer) $page - Locations page number
@@ -69,6 +69,17 @@ class API
             'page' => $page,
             'per_page' => $per_page
         ));
+    }
+
+    /**
+     * Get delivery locations for courier
+     * @since 1.0.2
+     * 
+     * @return (array) - Locations for every country
+     */
+    public function getCourierDeliveryLocations()
+    {
+        return $this->callApi($this->url . 'courier_delivery_locations');
     }
 
     /**
@@ -109,6 +120,19 @@ class API
     public function getOrder( $order_id )
     {
         return $this->callApi($this->url . 'orders/' . $order_id);
+    }
+
+    /**
+     * Update order ready state
+     * @since 1.0.2
+     * 
+     * @param (string) $order_id - Order ID
+     * @param (boolean) $is_ready - Whether order is ready
+     * @return (array) - Detailed Order information
+     */
+    public function changeOrderReadyState( $order_id, $is_ready )
+    {
+        return $this->callApi($this->url . 'orders/' . $order_id . '/update_ready_state', array('id' => $order_id, 'ready' => $is_ready));
     }
 
     /**
