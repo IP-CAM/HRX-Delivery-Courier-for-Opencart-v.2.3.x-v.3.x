@@ -1,0 +1,89 @@
+<script>
+	var HRX_M_PARCEL_DEFAULT_GLOBAL = {{ global_parcel_default|json_encode() }};
+</script>
+<div class="container-fluid">
+	<div class="alert alert-warning">
+		<i class="fa fa-exclamation-circle"></i>
+		{{ hrx_m_description_parcel_defaults }}
+	</div>
+
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			<h3 class="panel-title"><i class="fa fa-cogs"></i></h3>
+		</div>
+
+		<div class="panel-body">
+			<div data-parcel-default-global>
+				{{ parcel_default_global_html }}
+			</div>
+
+			<div data-parcel-default-list>
+				{{ parcel_default_category_table }}
+			</div>
+		</div>
+	</div>
+
+</div>
+
+<!-- Parcel Defaults Edit Modal -->
+<div class="hrx-m-modal modal hidden" id="parcel_default_modal">
+	<div class="panel panel-default">
+		<div class="panel-heading">
+			<h3 class="panel-title" id="parcel_default_modal_title">PLACEHOLDER</h3>
+		</div>
+		<div class="panel-body form-horizontal">
+			<input type="hidden" name="hrx_m_pd_category_id" id="modal-pd-category-id" value="{{ global_parcel_default.category_id }}">
+
+			<div class="alert alert-info">
+				<i class="fa fa-exclamation-circle"></i>
+				{{ hrx_m_help_parcel_defaults }}
+			</div>
+
+			<div class="form-group">
+				<label class="col-sm-2 control-label" for="modal-pd-weight">{{ hrx_m_label_pd_weight }}</label>
+				<div class="col-sm-10">
+					<div class="input-group">
+						<input type="text" name="hrx_m_pd_weight" value="{{ global_parcel_default.weight }}" id="modal-pd-weight" class="form-control"/>
+						<span class="input-group-addon">kg</span>
+					</div>
+				</div>
+			</div>
+
+			<div class="form-group pd-dimensions">
+				<label class="col-sm-2 control-label" for="modal-pd-length">{{ hrx_m_label_pd_dimensions }}</label>
+				<div class="col-sm-10">
+					<div class="row">
+						<label class="col-sm-2 control-label" for="modal-pd-length">{{ hrx_m_label_pd_length }}</label>
+						<div class="col-sm-4">
+							<div class="input-group">
+								<input type="text" name="hrx_m_pd_length" value="{{ global_parcel_default.length }}" id="modal-pd-length" class="form-control"/>
+								<span class="input-group-addon">cm</span>
+							</div>
+						</div>
+
+						<label class="col-sm-2 control-label" for="modal-pd-width">{{ hrx_m_label_pd_width }}</label>
+						<div class="col-sm-4">
+							<div class="input-group">
+								<input type="text" name="hrx_m_pd_width" value="{{ global_parcel_default.width }}" id="modal-pd-width" class="form-control"/>
+								<span class="input-group-addon">cm</span>
+							</div>
+						</div>
+
+						<label class="col-sm-2 control-label" for="modal-pd-height">{{ hrx_m_label_pd_height }}</label>
+						<div class="col-sm-4">
+							<div class="input-group">
+								<input type="text" name="hrx_m_pd_height" value="{{ global_parcel_default.height }}" id="modal-pd-height" class="form-control"/>
+								<span class="input-group-addon">cm</span>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+
+			<div class="form-group text-center">
+				<button class="btn btn-default center" data-save-modal="#parcel_default_modal">{{ hrx_m_generic_btn_save }}</button>
+				<button class="btn btn-default center" data-close-modal="#parcel_default_modal">{{ hrx_m_generic_btn_cancel }}</button>
+			</div>
+		</div>
+	</div>
+</div>

@@ -1,0 +1,18 @@
+<tr data-row-category-id="{{ category_id }}" data-parcel-default="{% if hrx_parcel_default %}{{ hrx_parcel_default.getAttributesJsonAsBase64() }}{% endif %}">
+	<td>{{ category_id }}</td>
+	<td data-category-name>{{ name }}</td>
+	<td>
+		{% if hrx_parcel_default %}
+			<span class="has-parcel-default">{{ hrx_parcel_default.length }} x {{ hrx_parcel_default.width }} x {{ hrx_parcel_default.height }}, {{ hrx_parcel_default.weight }}kg</span>
+		{% else %}
+			<span class="no-parcel-default"></span>
+		{% endif %}
+	</td>
+	<td>
+		<button data-modal="#parcel_default_modal" type="button" class="btn btn-default" data-parcel-default-edit="{{ category_id }}">{{ hrx_m_pd_btn_edit }}</button>
+
+		{% if hrx_parcel_default %}
+			<button type="button" class="btn btn-default" data-parcel-default-reset="{{ category_id }}">{{ hrx_m_pd_btn_reset }}</button>
+		{% endif %}
+	</td>
+</tr>

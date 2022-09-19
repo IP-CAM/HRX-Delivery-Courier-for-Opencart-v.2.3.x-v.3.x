@@ -1,0 +1,76 @@
+<div class="container-fluid">
+    <div class="panel panel-default">
+        <div class="pabel-body panel-hrx-sync-actions">
+            <div class="timestamp-wrapper">
+                <span class="timestamp-text">{{ hrx_m_delivery_update_text }}</span>
+                <span class="timestamp-date">
+                    {% if delivery_locations_last_update %}
+                        {{ delivery_locations_last_update }}
+                    {% else %}
+                        {{ hrx_m_delivery_updated_never }}
+                    {% endif %}
+                </span>
+            </div>
+            <div>
+                <button type="button" data-refresh-delivery-locations="Courier" class="btn btn-default btn-hrx with-text"><i class="fa fa-refresh"></i>{{ hrx_m_btn_refresh_delivery_courier_locations }}</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="panel panel-default">
+        <div class="panel-heading">
+            <h3 class="panel-title">{{ hrx_m_title_delivery_courier_locations }}</h3>
+        </div>
+
+        <div class="panel-body">
+            <div class="table-responsive">
+                <table class="table table-striped table-hover">
+                    <thead>
+                        <tr>
+                            <th rowspan="2">{{ hrx_m_table_col_country }}</th>
+                            <th colspan="2">{{ hrx_m_table_col_dimmensions }}</th>
+                            <th colspan="2">{{ hrx_m_table_col_weight }}</th>
+                            <th rowspan="2">{{ hrx_m_table_col_active }}</th>
+                        </tr>
+                        <tr>
+                            <th>{{ hrx_m_table_col_min }}</th>
+                            <th>{{ hrx_m_table_col_max }}</th>
+                            <th>{{ hrx_m_table_col_min }}</th>
+                            <th>{{ hrx_m_table_col_max }}</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                    {% for delivery_location in delivery_locations %}
+                        <tr>
+                            <td>{{ delivery_location.country }}</td>
+                            <td>{{ delivery_location.getMinDimensions() }}</td>
+                            <td>{{ delivery_location.getMaxDimensions() }}</td>
+                            <td>{{ delivery_location.getMinWeight() }}</td>
+                            <td>{{ delivery_location.getMaxWeight() }}</td>
+                            <td>
+                                {% if delivery_location.active %}
+                                    <span class="delivery-point-enabled"></span>
+                                {% else %}
+                                    <span class="delivery-point-disabled"></span>
+                                {% endif %}
+                            </td>
+                        </tr>
+                    {% else %}
+                        <tr>
+                            <td colspan="6">
+                                <div class="alert alert-info">{{ hrx_m_alert_update_delivery_points_list }}</div>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div> <!-- Delivery locations panel -->
+
+    <div class="row">
+        <div class="col-sm-12 text-center">
+            {{ delivery_locations_pagination }}
+        </div>
+    </div>
+</div>

@@ -1,8 +1,8 @@
 <div class="container-fluid">
     <div class="panel panel-default">
-        <div class="pabel-body panel-warehouse-actions">
+        <div class="pabel-body panel-hrx-sync-actions">
             <div class="timestamp-wrapper">
-                <span class="timestamp-text">{{ hrx_m_warehouse_update_text }}</span>
+                <span class="timestamp-text">{{ hrx_m_delivery_update_text }}</span>
                 <span class="timestamp-date">
                     {% if delivery_points_last_update %}
                         {{ delivery_points_last_update }}
@@ -12,7 +12,7 @@
                 </span>
             </div>
             <div>
-                <button type="button" data-refresh-delivery-points class="btn btn-default btn-hrx with-text"><i class="fa fa-refresh"></i>{{ hrx_m_btn_refresh_delivery_points }}</button>
+                <button type="button" data-refresh-delivery-locations="Terminal" class="btn btn-default btn-hrx with-text"><i class="fa fa-refresh"></i>{{ hrx_m_btn_refresh_delivery_points }}</button>
             </div>
         </div>
     </div>

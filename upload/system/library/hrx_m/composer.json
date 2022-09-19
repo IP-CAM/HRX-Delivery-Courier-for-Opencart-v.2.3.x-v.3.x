@@ -1,7 +1,8 @@
 {
     "autoload": {
         "psr-4": {
-            "Mijora\\HrxOpencart\\": "src/"
+            "Mijora\\HrxOpencart\\": "src/",
+            "Mijora\\DVDoug\\BoxPacker\\": "box_packer/"
         }
     },
     "require": {

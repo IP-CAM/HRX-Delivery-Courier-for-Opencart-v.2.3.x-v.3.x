@@ -70,7 +70,9 @@
         <li><a href="#tab-api" data-toggle="tab">{{ hrx_m_tab_api }}</a></li>
         <li><a href="#tab-warehouse" data-toggle="tab">{{ hrx_m_tab_warehouse }}</a></li>
         <li><a href="#tab-delivery" data-toggle="tab">{{ hrx_m_tab_delivery }}</a></li>
+        <li><a href="#tab-delivery-courier" data-toggle="tab">{{ hrx_m_tab_delivery_courier }}</a></li>
         <li><a href="#tab-prices" data-toggle="tab">{{ hrx_m_tab_prices }}</a></li>
+        <li><a href="#tab-parcel-default" data-toggle="tab">{{ hrx_m_tab_parcel_default }}</a></li>
         {# <li><a href="#tab-services" data-toggle="tab">{{ hrx_m_tab_services }}</a></li>
         <li><a href="#tab-parcel-defaults" data-toggle="tab">{{ hrx_m_tab_parcel_defaults }}</a></li> #}
     </ul>
@@ -95,114 +97,25 @@
         <div class="tab-pane" id="tab-delivery">
             {{ partial_tab_delivery_point }}
         </div>
+        
+        <!-- Delivery Locations (Courier) -->
+        <div class="tab-pane" id="tab-delivery-courier">
+            {{ partial_tab_delivery_courier_location }}
+        </div>
 
         <!-- Price Settings -->
         <div class="tab-pane" id="tab-prices">
             {{ partial_tab_prices }}
         </div>
+        
+        <!-- Parcel Defaults -->
+        <div class="tab-pane" id="tab-parcel-default">
+            {{ partial_tab_parcel_default }}
+        </div>
 
         <!-- Parcel Defaults -->
         {# <div class="tab-pane" id="tab-parcel-defaults">
-            <div class="container-fluid">
-                <div class="alert alert-warning"><i class="fa fa-exclamation-circle"></i>
-                    {{ hrx_m_description_parcel_defaults }}
-                </div>
-
-                <div class="panel panel-default">
-                    <div class="panel-heading">
-                        <h3 class="panel-title"><i class="fa fa-cogs"></i> {{ hrx_m_title_parcel_defaults }}</h3>
-                    </div>
-
-                    <div class="panel-body">
-                        <div class="form-horizontal">
-
-                            <input type="hidden" name="hrx_m_pd_category_id" id="input-pd-category-id" value="{{ global_parcel_default.category_id }}">
-
-                            <div class="alert alert-info"><i class="fa fa-exclamation-circle"></i>
-                                {{ hrx_m_help_parcel_defaults }}
-                            </div>
-
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label" for="input-pd-hs-code">{{ hrx_m_label_pd_hs_code }}</label>
-                                <div class="col-sm-10">
-                                    <input type="text" name="hrx_m_pd_hs_code" value="{{ global_parcel_default.hs_code }}" id="input-pd-hs-code" class="form-control" />
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="col-sm-2 control-label" for="input-pd-weight">{{ hrx_m_label_pd_weight }}</label>
-                                <div class="col-sm-10">
-                                    <div class="input-group">
-                                        <input type="text" name="hrx_m_pd_weight" value="{{ global_parcel_default.weight }}" id="input-pd-weight" class="form-control" />
-                                        <span class="input-group-addon">kg</span>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-group pd-dimensions">
-                                <label class="col-sm-2 control-label" for="input-pd-length">{{ hrx_m_label_pd_dimensions }}</label>
-                                <div class="col-sm-10">
-                                    <div class="row">
-                                        <label class="col-sm-2 control-label" for="input-pd-length">{{ hrx_m_label_pd_length }}</label>
-                                        <div class="col-sm-4">
-                                            <div class="input-group">
-                                                <input type="text" name="hrx_m_pd_length" value="{{ global_parcel_default.length }}" id="input-pd-length" class="form-control" />
-                                                <span class="input-group-addon">cm</span>
-                                            </div>
-                                        </div>
-                                        
-                                        <label class="col-sm-2 control-label" for="input-pd-width">{{ hrx_m_label_pd_width }}</label>
-                                        <div class="col-sm-4">
-                                            <div class="input-group">
-                                                <input type="text" name="hrx_m_pd_width" value="{{ global_parcel_default.width }}" id="input-pd-width" class="form-control" />
-                                                <span class="input-group-addon">cm</span>
-                                            </div>
-                                        </div>
-
-                                        <label class="col-sm-2 control-label" for="input-pd-height">{{ hrx_m_label_pd_height }}</label>
-                                        <div class="col-sm-4">
-                                            <div class="input-group">
-                                                <input type="text" name="hrx_m_pd_height" value="{{ global_parcel_default.height }}" id="input-pd-height" class="form-control" />
-                                                <span class="input-group-addon">cm</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <div class="form-group">
-                                <div class="col-sm-12 text-center">
-                                    <button type="button" class="btn btn-default save-global-dimensions">{{ hrx_m_generic_btn_save }}</button>
-                                </div>
-                            </div>
-
-                        </div>
-
-                        <div class="table-responsive">
-                            <table class="table table-striped table-hover">
-                                <thead>
-                                    <tr>
-                                        <th>{{ hrx_m_pd_table_id }}</th>
-                                        <th>{{ hrx_m_pd_table_name }}</th>
-                                        <th>{{ hrx_m_pd_table_has_custom_defaults }}</th>
-                                        <th>{{ hrx_m_pd_table_action }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="pd-categories">
-                                    {{ pd_categories_partial }}
-                                </tbody>
-                            </table>
-                        </div>
-
-                        <div class="row">
-                            <div id="hrx_m_pd_pagination" class="col-sm-12 text-center">
-                                {{ pd_categories_paginator }}
-                            </div>
-                        </div>
-
-                    </div>
-                </div>
-            </div>
+            
         </div> #}
 
     </div> <!-- Content panel -->

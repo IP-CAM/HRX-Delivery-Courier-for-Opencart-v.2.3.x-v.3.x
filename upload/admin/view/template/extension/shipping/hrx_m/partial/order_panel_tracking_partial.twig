@@ -1,0 +1,22 @@
+<table class="table">
+	<thead>
+		<tr>
+			<th>{{ hrx_m_panel_events_col_timestamp }}</th>
+			<th>{{ hrx_m_panel_events_col_location }}</th>
+			<th>{{ hrx_m_panel_events_col_event }}</th>
+		</tr>
+	</thead>
+	<tbody>
+        {% for track_event in track_events %}
+		<tr>
+			<th scope="row">{{ track_event.timestamp }}</th>
+			<td>{{ track_event.location }}</td>
+			<td>{{ track_event.event }}</td>
+		</tr>
+        {% else %}
+        <tr>
+            <td colspan="3">{% if is_placeholder %}{{ hrx_m_panel_notify_load_events }}{% else %}{{ hrx_m_panel_notify_no_events }}{% endif %}</td>
+        </tr>
+        {% endfor %}
+	</tbody>
+</table>

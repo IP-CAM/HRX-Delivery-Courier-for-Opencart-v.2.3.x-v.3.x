@@ -36,6 +36,22 @@
                             </div>
                         </div>
 
+                        <div class="form-group">
+                            <label class="col-sm-2 control-label" for="input-courier-price">{{ hrx_m_label_price_courier }}</label>
+                            <div class="col-sm-4">
+                                <input type="text" name="courier_price" value="" id="input-courier-price" class="form-control" />
+                            </div>
+
+                            <label class="col-sm-2 control-label" for="input-courier-price-type">{{ hrx_m_label_price_range_type }}</label>
+                            <div class="col-sm-4">
+                                <select name="courier_price_range_type" value="0" id="input-courier-price-range-type" class="form-control">
+                                    {% for range_key, price_range_type in price_range_types %}
+                                        <option value="{{ range_key }}">{{ price_range_type }}</option>
+                                    {% endfor %}
+                                </select>
+                            </div>
+                        </div>
+
                         <div class="form-group text-center">
                             <button id="add-price-btn" class="btn btn-default center">{{ hrx_m_button_add_price }}</button>
                         </div>
@@ -48,12 +64,14 @@
                                     <th>{{ hrx_m_label_price_country }}</th>
                                     <th>{{ hrx_m_label_price_terminal }}</th>
                                     <th>{{ hrx_m_label_price_range_type }}</th>
+                                    <th>{{ hrx_m_label_price_courier }}</th>
+                                    <th>{{ hrx_m_label_price_range_type }}</th>
                                     <th>{{ hrx_m_header_actions }}</th>
                                 </tr>
                             </thead>
                             <tbody id="created-prices">
                                 <tr id="no-price-notification" class=" {% if hrx_m_prices %}hidden{% endif %} ">
-                                    <td colspan="4">No prices set</td>
+                                    <td colspan="6">No prices set</td>
                                 </tr>
                                 {% for price in hrx_m_prices %}
                                     {{ price }}
@@ -88,6 +106,22 @@
                 <label class="col-sm-2 control-label" for="input-modal-terminal-price-range-type">{{ hrx_m_label_price_range_type }}</label>
                 <div class="col-sm-4">
                     <select name="terminal_price_range_type" value="0" id="input-modal-terminal-price-range-type" class="form-control">
+                        {% for range_key, price_range_type in price_range_types %}
+                            <option value="{{ range_key }}">{{ price_range_type }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="col-sm-2 control-label" for="input-modal-courier-price">{{ hrx_m_label_price_courier }}</label>
+                <div class="col-sm-4">
+                    <input type="text" name="courier_price" value="" id="input-modal-courier-price" class="form-control" />
+                </div>
+
+                <label class="col-sm-2 control-label" for="input-modal-courier-price-range-type">{{ hrx_m_label_price_range_type }}</label>
+                <div class="col-sm-4">
+                    <select name="courier_price_range_type" value="0" id="input-modal-courier-price-range-type" class="form-control">
                         {% for range_key, price_range_type in price_range_types %}
                             <option value="{{ range_key }}">{{ price_range_type }}</option>
                         {% endfor %}

@@ -1,0 +1,28 @@
+<h4>{{ hrx_m_title_pd_table }}</h4>
+<div class="table-responsive">
+	<table class="table table-striped table-hover">
+		<thead>
+			<tr>
+				<th>{{ hrx_m_pd_table_id }}</th>
+				<th>{{ hrx_m_pd_table_name }}</th>
+				<th>{{ hrx_m_pd_table_has_custom_defaults }}</th>
+				<th>{{ hrx_m_pd_table_action }}</th>
+			</tr>
+		</thead>
+		<tbody>
+			{% for category_row in category_list %}
+				{{ category_row }}
+			{% else %}
+				<tr>
+					<td class="text-center" colspan="4">{{ hrx_m_pd_table_no_categories }}</td>
+				</tr>
+			{% endfor %}
+		</tbody>
+	</table>
+</div>
+
+<div class="row">
+	<div class="col-sm-12 text-center">
+		{{ parcel_default_pagination }}
+	</div>
+</div>

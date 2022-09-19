@@ -1,0 +1,212 @@
+<div data-hrx-order-panel class="panel panel-default">
+	<div class="panel-heading">
+		<h3 class="panel-title">
+			<span class="hrx-panel-logo-wrapper"><img src="view/image/hrx_m/logo-hrx.svg" alt="Logo" style="height: 33px;"></span>
+			{{ hrx_m_panel_title }}
+		</h3>
+		{% if hrx_order.getHrxOrderId() %}
+			<div class="hrx-panel-actions">
+				<div class="btn-group">
+					<button type="button" class="btn btn-default btn-hrx dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+						<i class="fa fa-print"></i>
+						<span class="caret"></span>
+					</button>
+					<ul class="dropdown-menu dropdown-menu-right">
+						<li>
+							<a href="#" data-print-label data-label-type="shipment">{{ hrx_m_btn_print_label }}</a>
+						</li>
+						{% if hrx_order.canPrintReturnLabel() %}
+							<li>
+								<a href="#" data-print-label-return data-label-type="return">{{ hrx_m_btn_print_label_return }}</a>
+							</li>
+						{% endif %}
+					</ul>
+				</div>
+			</div>
+		{% endif %}
+	</div>
+	<div class="panel-body">
+
+		{% if not box_size.fits %}
+			<div class="hrx-alert alert-warning">
+				<i class="fa fa-exclamation-circle"></i>
+				{{ hrx_m_warning_does_not_fit }}
+			</div>
+		{% endif %}
+		
+		{% if notify_missing_warehouse %}
+			<div class="hrx-alert alert-warning">
+				<i class="fa fa-exclamation-circle"></i>
+				{{ notify_missing_warehouse }}
+			</div>
+		{% endif %}
+
+		<ul class="container-fluid nav nav-tabs">
+			<li class="active">
+				<a href="#hrx-tab-order-general" data-toggle="tab">{{ hrx_m_panel_tab_general }}</a>
+			</li>
+			{% if hrx_order.getHrxOrderId() %}
+			<li>
+				<a href="#hrx-tab-order-tracking" data-toggle="tab">{{ hrx_m_panel_tab_tracking_events }}</a>
+			</li>
+			{% endif %}
+		</ul>
+
+		<div class="tab-content">
+			<div class="tab-pane active" id="hrx-tab-order-general">
+				<div class="form-horizontal">
+					<div class="form-group">
+						<label class="col-sm-2 control-label">{{ hrx_m_panel_label_hrx_order_status }}</label>
+						{% if not hrx_order.getHrxOrderId() or hrx_order.isCancelled() or hrx_order.canBeCancelled() %}
+							<div class="col-sm-6">
+								<pre>{{ hrx_m_panel_order_status }}</pre>
+							</div>
+						{% else %}
+							<div class="col-sm-10">
+								<pre>{{ hrx_m_panel_order_status }}</pre>
+							</div>
+						{% endif %}
+
+						{% if not hrx_order.getHrxOrderId() or hrx_order.isCancelled() %}
+							{# only enable register button if parcel box_size.fits limitations #}
+							<div class="col-sm-4">
+								<button data-register-order class="btn btn-default btn-hrx" {% if not box_size.fits %} disabled {% endif %}>{{ hrx_m_panel_btn_register }}</button>
+							</div>
+						{% elseif hrx_order.canBeCancelled() %}
+							<div class="col-sm-4">
+								<button data-cancel-order class="btn btn-danger">{{ hrx_m_btn_cancel_order }}</button>
+							</div>
+						{% endif %}
+					</div>
+				</div>
+
+				{% if hrx_order.getHrxOrderId() and not hrx_order.isCancelled() and hrx_order.getHrxTrackingNumber() %}
+					<div class="form-horizontal">
+						<div class="form-group">
+							<label class="col-sm-2 control-label">{{ hrx_m_panel_label_hrx_track_nr }}</label>
+							<div class="col-sm-10">
+								<div class="form-control">
+									<a href="{{ hrx_order.getHrxTrackingUrl() }}" target="_blank">{{ hrx_order.getHrxTrackingNumber() }}</a>
+								</div>
+							</div>
+						</div>
+					</div>
+				{% endif %}
+
+				{% if hrx_order.getHrxOrderId() and not hrx_order.isCancelled() %}
+					{% set disabled = 'disabled' %}
+				{% endif %}
+
+				{# {% if is_terminal %} #}
+				<div class="form-horizontal">
+					<div class="form-group">
+						<label class="col-sm-2 control-label">{{ hrx_m_panel_label_warehouse }}</label>
+						<div class="col-sm-10">
+							<select class="form-control" name="hrx_warehouse" data-value="{{ selected_warehouse }}" onchange="HRX_M_ORDER.markChange(this)" {{ disabled }}>
+								{% for option in warehouses %}
+									<option value="{{ option.id }}" {% if option.id == selected_warehouse %} selected {% endif %}>{{ option.getNameWithAddress() }}</option>
+								{% endfor %}
+							</select>
+						</div>
+					</div>
+
+					{% if delivery_point.id %}
+						<div class="form-group">
+							<label class="col-sm-2 control-label">{{ hrx_m_panel_label_terminal }}</label>
+							<div class="col-sm-10">
+								<div class="form-control">{{ delivery_point.getFormatedAddress() }}</div>
+							</div>
+						</div>
+					{% endif %}
+
+					<div class="form-group">
+						{% if parcel_dimensions == 'saved' %}
+						<label class="col-sm-2 control-label">{{ hrx_m_panel_label_box_size_saved }}</label>
+						{% elseif parcel_dimensions == 'registered' %}
+						<label class="col-sm-2 control-label">{{ hrx_m_panel_label_box_size_registered }}</label>
+						{% else %}
+						<label class="col-sm-2 control-label">{{ hrx_m_panel_label_box_size_predicted }}</label>
+						{% endif %}
+						<div class="col-sm-10 hrx-order-dimensions">
+							<div class="input-group">
+								<span class="input-group-addon">{{ hrx_m_panel_label_length }}</span>
+								<input type="number" step="1" name="hrx_length" class="form-control" data-value="{{ box_size.length }}" value="{{ box_size.length }}" onchange="HRX_M_ORDER.markChange(this)" {{ disabled }}>
+								<span class="input-group-addon">cm</span>
+							</div>
+
+							<div class="input-group">
+								<span class="input-group-addon">{{ hrx_m_panel_label_width }}</span>
+								<input type="number" step="1" name="hrx_width" class="form-control" data-value="{{ box_size.width }}" value="{{ box_size.width }}" onchange="HRX_M_ORDER.markChange(this)" {{ disabled }}>
+								<span class="input-group-addon">cm</span>
+							</div>
+
+							<div class="input-group">
+								<span class="input-group-addon">{{ hrx_m_panel_label_height }}</span>
+								<input type="number" step="1" name="hrx_height" class="form-control" data-value="{{ box_size.height }}" value="{{ box_size.height }}" onchange="HRX_M_ORDER.markChange(this)" {{ disabled }}>
+								<span class="input-group-addon">cm</span>
+							</div>
+
+							<div class="input-group">
+								<span class="input-group-addon">{{ hrx_m_panel_label_weight }}</span>
+								<input type="number" step="0.01" name="hrx_weight" class="form-control" data-value="{{ box_size.weight }}" value="{{ box_size.weight }}" onchange="HRX_M_ORDER.markChange(this)" {{ disabled }}>
+								<span class="input-group-addon">kg</span>
+							</div>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<label class="col-sm-2 control-label">{{ hrx_m_panel_label_comment }}</label>
+						<div class="col-sm-10">
+							<input type="text" name="hrx_comment" class="form-control" data-value="{{ hrx_order.getComment() }}" value="{{ hrx_order.getComment() }}" onchange="HRX_M_ORDER.markChange(this)" {{ disabled }}>
+						</div>
+					</div>
+
+					<div class="form-group">
+						<h4 class="col-sm-12">{{ hrx_m_panel_title_dimensions_limitations }}</h4>
+						<label class="col-sm-2 control-label">{{ hrx_m_panel_label_limit_dimensions }}</label>
+						<div class="col-sm-4">
+							<div class="form-control">Min: {{ delivery_point.getMinDimensions() }} Max: {{ delivery_point.getMaxDimensions() }}</div>
+						</div>
+						<label class="col-sm-2 control-label">{{ hrx_m_panel_label_limit_weight }}</label>
+						<div class="col-sm-4">
+							<div class="form-control">Min: {{ delivery_point.getMinWeight() }} Max: {{ delivery_point.getMaxWeight() }}</div>
+						</div>
+					</div>
+
+				</div> {# {% endif %} #}
+			</div> {# tab-pane #}
+			
+			{% if hrx_order.getHrxOrderId() %}
+				<div class="tab-pane" id="hrx-tab-order-tracking">
+					<button data-get-tracking-info class="btn btn-default">{{ hrx_m_panel_btn_load_events }}</button>
+					<div class="table-responsive" data-hrx-tracking-events>
+						{{ events_partial }}
+					</div>
+				</div>
+			{% endif %}
+		</div> {# tab-content #}
+	</div> {# panel-body #}
+	<div class="panel-footer">
+		{% if hrx_order.getHrxOrderId() and not hrx_order.isCancelled() %}
+			<button data-refresh-order="{{ hrx_order.getHrxOrderId() }}" class="btn btn-default">{{ hrx_m_btn_refresh_order }}</button>
+
+			{% if hrx_order.canUpdateReadyState() and not hrx_order.isMarkedForPickup() %}
+				<button data-change-order-state="1" class="btn btn-default">{{ hrx_m_btn_ready_for_pickup }}</button>
+			{% endif %}
+
+			{% if hrx_order.canUpdateReadyState() and hrx_order.isMarkedForPickup() %}
+				<button data-change-order-state="0" class="btn btn-default">{{ hrx_m_btn_cancel_pickup }}</button>
+			{% endif %}
+		{% else %}
+			<button data-edit-order class="btn btn-success" disabled>{{ hrx_m_panel_btn_edit }}</button>
+		{% endif %}
+	</div>
+</div>
+
+{# <pre>{{ custom_dimensions|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre> #}
+{# <pre>{{ products|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre> #}
+{# <pre>{{ products_parsed|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre> #}
+{# <pre>{{ hrx_order|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre> #}
+{# <pre>{{ box_size|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre> #}
+{# <pre>{{ box_size.fits|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre> #}
+{# <pre>{{ warehouses|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre> #}

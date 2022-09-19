@@ -1,0 +1,14 @@
+<link rel="stylesheet" href="view/javascript/hrx_m/admin.css">
+{{ hrx_order_panel_partial }}
+
+{# <pre>{{ order_data|json_encode(constant('JSON_PRETTY_PRINT')) }}</pre> #}
+<script>
+	var HRX_M_ORDER_DATA = {
+		urlAjax: '{{ url_ajax }}',
+		defaultWarehouse: {{ default_warehouse|json_encode() }},
+		orderId: {{ order_id }},
+		refreshResult: '{{ refresh_result }}',
+	};
+</script>
+<script src="{{ mijora_common_js_path }}"></script>
+<script src="view/javascript/hrx_m/order.js" type="text/javascript"></script>

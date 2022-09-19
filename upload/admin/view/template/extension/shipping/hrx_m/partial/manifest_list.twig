@@ -2,6 +2,37 @@
     <div class="panel-heading">
         <img src="view/image/hrx_m/manifest-table.svg">
         <h3 class="panel-title">{{ hrx_m_title_manifest_orders }}</h3>
+        <div class="hrx-panel-actions">
+            <div class="btn-group">
+                <button type="button" class="btn btn-default btn-hrx dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-truck"></i>
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-right">
+                    <li>
+                        <a href="#" data-mass-action="#state_change" data-order-state="1">{{ hrx_m_btn_ready_for_pickup }}</a>
+                    </li>
+                    <li>
+                        <a href="#" data-mass-action="#state_change" data-order-state="0">{{ hrx_m_btn_cancel_pickup }}</a>
+                    </li>
+                </ul>
+            </div>
+            
+            <div class="btn-group">
+                <button type="button" class="btn btn-default btn-hrx dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                    <i class="fa fa-print"></i>
+                    <span class="caret"></span>
+                </button>
+                <ul class="dropdown-menu dropdown-menu-right">
+                    <li>
+                        <a href="#" data-mass-action="#multiple_labels" data-label-type="shipment">{{ hrx_m_btn_print_label }}</a>
+                    </li>
+                    <li>
+                        <a href="#" data-mass-action="#multiple_labels" data-label-type="return">{{ hrx_m_btn_print_label_return }}</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
     </div>
 
     <div class="panel-body">
@@ -9,12 +40,11 @@
             <table class="table table-bordered table-hover">
                 <thead>
                     <tr>
-                        <td style="width: 1px;" class="text-center"><input id="check-all-input" type="checkbox"/></td>
+                        <td style="width: 1px;" class="text-center"><input data-check-all="[name='selected[]']" type="checkbox"/></td>
                         <td class="text-right">{{ hrx_m_manifest_col_order_id }}</td>
                         <td class="text-left"> {{ hrx_m_manifest_col_customer }}</td>
                         <td class="text-left"> {{ hrx_m_manifest_col_status }}</td>
-                        <td class="text-right">{{ hrx_m_manifest_col_hrx_order_id }}</td>
-                        {# <td class="text-right">{{ hrx_m_manifest_col_manifest_id }}</td> #}
+                        <td class="text-right">{{ hrx_m_manifest_col_hrx_data }}</td>
                         <td class="text-right">{{ hrx_m_manifest_col_action }}</td>
                     </tr>
                 </thead>

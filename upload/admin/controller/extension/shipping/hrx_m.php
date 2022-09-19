@@ -4,10 +4,16 @@ use HrxApi\API as HrxApi;
 use HrxApi\Receiver as HrxReceiver;
 use HrxApi\Shipment as HrxShipment;
 use HrxApi\Order as HrxOrder;
+use Mijora\DVDoug\BoxPacker\ItemList;
 use Mijora\HrxOpencart\Helper;
+use Mijora\HrxOpencart\Interfaces\DeliveryPointInterface;
 use Mijora\HrxOpencart\Model\AjaxResponse;
+use Mijora\HrxOpencart\Model\DeliveryCourier;
 use Mijora\HrxOpencart\Model\DeliveryPoint;
 use Mijora\HrxOpencart\Model\Order;
+use Mijora\HrxOpencart\Model\ParcelDefault;
+use Mijora\HrxOpencart\Model\ParcelItem;
+use Mijora\HrxOpencart\Model\ParcelProduct;
 use Mijora\HrxOpencart\Model\Price;
 use Mijora\HrxOpencart\Model\Warehouse;
 use Mijora\HrxOpencart\OpenCart\DbTables;
@@ -22,6 +28,8 @@ class ControllerExtensionShippingHrxM extends Controller
     private $tabs = [
         'general', 'api', 'warehouse', 'price', 'terminals', 'parcel-defaults'
     ];
+
+    private $_cache = [];
 
     public function install()
     {
@@ -42,74 +50,9 @@ class ControllerExtensionShippingHrxM extends Controller
         Helper::removeModificationXml();
     }
 
-    // private function installCountries()
-    // {
-    //     $config_key = Params::PREFIX . 'country_last_update';
-    //     $last_country_update = $this->config->get($config_key);
-
-    //     if (!$last_country_update) {
-    //         $last_country_update = 0;
-    //     }
-
-    //     $last_country_update = (int) $last_country_update;
-
-    //     $countries_installed = $this->db->query("
-    //         SELECT COUNT(id) as total FROM `" . DB_PREFIX . "omniva_int_m_country` 
-    //     ");
-
-    //     $has_countries = true;
-    //     if (!$countries_installed->rows || (int) $countries_installed->row['total'] === 0) {
-    //         $has_countries = false;
-    //     }
-
-    //     // check if need to update
-    //     if ($has_countries && time() < $last_country_update) {
-    //         return;
-    //     }
-
-    //     // if ($countries_installed->rows && (int) $countries_installed->row['total'] > 0) {
-    //     //     return;
-    //     // }
-
-    //     if (!Helper::$token) {
-    //         Helper::setApiStaticToken($this->config);
-    //     }
-
-    //     $all_countries = Helper::getCountries(true);
-
-    //     if (empty($all_countries)) {
-    //         Helper::saveSettings($this->db, [
-    //             $config_key => time() + Params::COUNTRY_CHECK_TIME_RETRY
-    //         ]);
-    //         return;
-    //     }
-
-    //     $this->db->query("
-    //         TRUNCATE TABLE " . DB_PREFIX . "omniva_int_m_country
-    //     ");
-
-    //     $offset = 0;
-    //     while ($slice = array_slice($all_countries, $offset, 50)) {
-    //         $offset += 50;
-
-    //         $data = array_map(function ($item) {
-    //             return "('" . $item->id . "', '" . $item->code . "', '" . $this->db->escape($item->name) . "', '" . $this->db->escape($item->en_name) . "')";
-    //         }, $slice);
-
-    //         $sql = "INSERT INTO `" . DB_PREFIX . "omniva_int_m_country` (`id`, `code`, `name`, `en_name`)
-    //             VALUES " . implode(', ', $data);
-    //         $this->db->query($sql);
-    //     }
-
-    //     Helper::saveSettings($this->db, [
-    //         $config_key => time() + Params::COUNTRY_CHECK_TIME
-    //     ]);
-
-    //     $this->session->data['success'] = 'API Countries updated';
-    // }
-
     public function index()
     {
+        // $this->install();
         $this->load->language('extension/shipping/hrx_m');
 
         $this->document->setTitle($this->language->get('heading_title'));
@@ -148,24 +91,10 @@ class ControllerExtensionShippingHrxM extends Controller
                 $current_tab = 'api';
             }
 
-
-            // if (isset($this->request->post['sender_settings_update'])) {
-            //     unset($this->request->post['sender_settings_update']);
-            //     $this->saveSettings($this->request->post);
-            //     $this->session->data['success'] = $this->language->get(Params::PREFIX . 'msg_setting_saved');
-            //     $current_tab = 'sender-info';
-            // }
-
             $this->response->redirect($this->url->link('extension/shipping/' . Params::SETTINGS_CODE, $this->getUserToken() . '&tab=' . $current_tab, true));
         }
 
         $data[Params::PREFIX . 'version'] = Params::VERSION;
-
-        // // set static tokens
-        // Helper::setApiStaticToken($this->config);
-
-        // // update API coutry list if needed
-        // $this->installCountries();
 
         $data['success'] = '';
         $data['error_warning'] = '';
@@ -183,10 +112,6 @@ class ControllerExtensionShippingHrxM extends Controller
 
         $data['form_action'] = $this->url->link('extension/shipping/' . Params::SETTINGS_CODE, $this->getUserToken(), true);
 
-        // $data['cancel'] = $this->url->link(Helper::getExtensionHomeString() . '/extension', $this->getUserToken() . '&type=shipping', true);
-
-        // // $data['cod_options'] = $this->loadPaymentOptions();
-
         $this->load->model('localisation/tax_class');
 
         $data['tax_classes'] = $this->model_localisation_tax_class->getTaxClasses();
@@ -195,7 +120,7 @@ class ControllerExtensionShippingHrxM extends Controller
 
         $data['geo_zones'] = $this->model_localisation_geo_zone->getGeoZones();
 
-        $data['ajax_url'] = 'index.php?route=extension/shipping/' . Params::SETTINGS_CODE . '/ajax&' . $this->getUserToken();
+        $data['ajax_url'] = $this->getAjaxUrl();
 
         // opencart 3 expects status and sort_order begin with shipping_ 
         $setting_prefix = '';
@@ -219,12 +144,9 @@ class ControllerExtensionShippingHrxM extends Controller
         // Load saved settings or values from post request
         $module_settings = [
             // general tab
-            'tax_class_id', 'geo_zone_id',
+            'tax_class_id', 'geo_zone_id', 'sort_order_internal',
             // api tab
             'api_token', 'api_test_mode',
-            // // sender-info tab
-            // 'sender_name', 'sender_street', 'sender_postcode',
-            // 'sender_city', 'sender_country', 'sender_phone', 'sender_email',
         ];
 
         foreach ($module_settings as $key) {
@@ -236,6 +158,13 @@ class ControllerExtensionShippingHrxM extends Controller
             $data[Params::PREFIX . $key] = $this->config->get(Params::PREFIX . $key);
         }
 
+        $data[Params::PREFIX . 'sort_order_internal'] = (int) $data[Params::PREFIX . 'sort_order_internal'];
+
+        $data['internal_sort_orders'] = [
+            Params::SORT_ORDER_INTERNAL_COURIER_TERMINAL => $this->language->get(Params::PREFIX . 'sort_order_internal_' . Params::SORT_ORDER_INTERNAL_COURIER_TERMINAL),
+            Params::SORT_ORDER_INTERNAL_TERMINAL_COURIER => $this->language->get(Params::PREFIX . 'sort_order_internal_' . Params::SORT_ORDER_INTERNAL_TERMINAL_COURIER)
+        ];
+
         $partial_tab_general = $this->load->view('extension/shipping/hrx_m/partial/tab_general', $data);
         $partial_tab_api = $this->load->view('extension/shipping/hrx_m/partial/tab_api', $data);
 
@@ -245,17 +174,12 @@ class ControllerExtensionShippingHrxM extends Controller
         $data['sync_warehouse_per_page'] = Params::SYNC_WAREHOUSE_PER_PAGE;
         $data['sync_delivery_points_per_page'] = Params::SYNC_DELIVERY_POINTS_PER_PAGE;
 
-        // $data['delivery_points'] = [
-        //     DeliveryPoint::getDeliveryPointById('000ea774-6e17-4112-8a74-251585dd917e', $this->db)
-        // ];
-        // var_dump(DeliveryPoint::getDeliveryPointById('000ea774-6e17-4112-8a74-251585dd917e', $this->db));
-        // $data['delivery_points'] = DeliveryPoint::getPage(1, 30, $this->db);
-        // $total_pages = ceil(DeliveryPoint::getTotalPoints($this->db, false) / 30);
-        // $data['delivery_points_pagination'] = $this->getPaginationHtml(1, $total_pages, 'getDeliveryPointsPage');
         $partial_tab_delivery_point = $this->getDeliveryPointsPagePartial(1);
-        // $this->load->view('extension/shipping/hrx_m/partial/tab_delivery', $data);
+        $partial_tab_delivery_courier_location = $this->getDeliveryLocationsPagePartial(1);
 
         $partial_tab_prices = $this->getPricesPagePartial(1);
+
+        $partial_tab_parcel_default = $this->getParcelDefaultTab();
 
 
         $version_check = @json_decode($this->config->get(Params::PREFIX . 'version_check_data'), true);
@@ -280,55 +204,8 @@ class ControllerExtensionShippingHrxM extends Controller
         $data[Params::PREFIX . 'db_check'] = Helper::checkDbTables($this->db);
         $data[Params::PREFIX . 'db_fix_url'] = $this->url->link('extension/shipping/' . Params::SETTINGS_CODE, $this->getUserToken() . '&fixdb', true);
 
-        // $pd_categories_data = $this->getPdCategories();
-
-        // $data = array_merge($data, $pd_categories_data);
-
         $data[Params::PREFIX . 'xml_check'] = Helper::isModificationNewer();
         $data[Params::PREFIX . 'xml_fix_url'] = $this->url->link('extension/shipping/' . Params::SETTINGS_CODE, $this->getUserToken() . '&fixxml', true);
-
-        // // $data['required_settings_set'] = $this->isRequiredSettingsSet($data);
-
-        // // Load dynamic strings
-        // $data['dynamic_strings'] = $this->getDynamicStrings();
-
-        // $partial_data = [
-        //     'omniva_int_options' => ShippingOption::getShippingOptions($this->db),
-        //     'dynamic_strings' => $data['dynamic_strings']
-        // ];
-        // $data['omniva_int_shipping_options'] = $this->load->view('extension/shipping/omniva_int_m/shipping_options_partial', $partial_data);
-
-        // $data['services'] = Helper::getServices($this->session);
-
-        // $data['countries'] = Country::getAllCountries($this->db);
-
-        // $data['sender_tab_partial'] = $this->load->view('extension/shipping/omniva_int_m/sender_tab_partial', $data);
-
-        // $data['price_types'] = [];
-        // foreach (Offer::OFFER_PRICE_AVAILABLE as $type) {
-        //     $data['price_types'][$type] = $this->language->get(Offer::getOfferPriceTranslationString($type));
-        // }
-
-        // $data['price_type_addons'] = Offer::OFFER_PRICE_ADDONS;
-
-        // $data['priority_types'] = [];
-        // foreach (Offer::OFFER_PRIORITY_AVAILABLE as $type) {
-        //     $data['priority_types'][$type] = $this->language->get(Offer::getOfferPriorityTranslationString($type));
-        // }
-
-        // $data['shipping_types'] = [];
-        // foreach (Service::TYPE_AVAILABLE as $type) {
-        //     $data['shipping_types'][$type] = $this->language->get(Service::getTypeTranslationString($type));
-        // }
-
-        // $data['services_list'] = [];
-
-        // foreach ($data['services'] as $service) {
-        //     $data['services_list'][$service->get(Service::SERVICE_CODE)] = [
-        //         'name' => $service->get(Service::NAME),
-        //         'shippingType' => empty($service->get(Service::PARCEL_TERMINAL_TYPE)) ? Service::TYPE_COURIER : Service::TYPE_TERMINAL
-        //     ];
-        // }
 
         $data['header'] = $this->load->controller('common/header');
         $data['column_left'] = $this->load->controller('common/column_left');
@@ -338,31 +215,14 @@ class ControllerExtensionShippingHrxM extends Controller
         $data['partial_tab_api'] = $partial_tab_api;
         $data['partial_tab_warehouse'] = $partial_tab_warehouse;
         $data['partial_tab_delivery_point'] = $partial_tab_delivery_point;
+        $data['partial_tab_delivery_courier_location'] = $partial_tab_delivery_courier_location;
         $data['partial_tab_prices'] = $partial_tab_prices;
+        $data['partial_tab_parcel_default'] = $partial_tab_parcel_default;
 
         $data['mijora_common_js_path'] = $this->getMijoraCommonJsPath();
 
         $this->response->setOutput($this->load->view('extension/shipping/hrx_m/settings', $data));
     }
-
-    // protected function isRequiredSettingsSet($data)
-    // {
-    //     $required = [
-    //         // api tab
-    //         'api_user', 'api_pass',
-    //         // sender-info tab
-    //         'sender_name', 'sender_street', 'sender_postcode',
-    //         'sender_city', 'sender_country', 'sender_phone', 'sender_email'
-    //     ];
-
-    //     foreach ($required as $key) {
-    //         if (!isset($data[Params::PREFIX . $key]) || empty($data[Params::PREFIX . $key])) {
-    //             return false;
-    //         }
-    //     }
-
-    //     return true;
-    // }
 
     protected function getUserToken()
     {
@@ -396,104 +256,33 @@ class ControllerExtensionShippingHrxM extends Controller
         return !$this->error;
     }
 
-    // protected function getCronUrl()
-    // {
-    //     $secret = $this->config->get(Params::PREFIX . 'cron_secret');
-    //     if (!$secret) { // first time create a secret
-    //         $secret = uniqid();
-    //         $this->saveSettings(array(Params::PREFIX . 'cron_secret' => $secret));
-    //     }
-
-    //     return HTTPS_CATALOG . 'index.php?route=extension/module/omniva_int_m/ajax&action=terminalUpdate&secret=' . $secret;
-    // }
-
     protected function saveSettings($data)
     {
         Helper::saveSettings($this->db, $data);
     }
-
-    // protected function loadPaymentOptions()
-    // {
-    //     $result = array();
-
-    //     if (version_compare(VERSION, '3.0.0', '>=')) {
-    //         $this->load->model('setting/extension');
-    //         $payments = $this->model_setting_extension->getInstalled('payment');
-    //     } else {
-    //         $this->load->model('extension/extension');
-    //         $payments = $this->model_extension_extension->getInstalled('payment');
-    //     }
-
-    //     foreach ($payments as $payment) {
-    //         $this->load->language('extension/payment/' . $payment);
-    //         $result[$payment] = $this->language->get('heading_title');
-    //     }
-
-    //     return $result;
-    // }
 
     /**
      * Converts certain settings that comes as array into string
      */
     protected function prepPostData()
     {
-        // when no checkboxes is selected post doesnt send it, make sure settings is updated correctly
-        // if (isset($this->request->post['cod_settings_update'])) {
-        //     $post_cod_options = [];
-        //     if (isset($this->request->post[Params::PREFIX . 'cod_options'])) {
-        //         $post_cod_options = $this->request->post[Params::PREFIX . 'cod_options'];
-        //     }
-        //     $this->request->post[Params::PREFIX . 'cod_options'] = json_encode($post_cod_options);
-        // }
-
         // // we want to json_encode email template for better storage into settings
         // if (isset($this->request->post[Params::PREFIX . 'tracking_email_template'])) {
         //     $this->request->post[Params::PREFIX . 'tracking_email_template'] = json_encode($this->request->post[Params::PREFIX . 'tracking_email_template']);
         // }
 
-        // // Opencart 3 expects status to be shipping_omniva_int_m_status
+        // Opencart 3 expects status to be shipping_*_status
         if (version_compare(VERSION, '3.0.0', '>=') && isset($this->request->post[Params::PREFIX . 'status'])) {
             $this->request->post['shipping_' . Params::PREFIX . 'status'] = $this->request->post[Params::PREFIX . 'status'];
             unset($this->request->post[Params::PREFIX . 'status']);
         }
 
-        // Opencart 3 expects sort_order to be shipping_omniva_int_m_sort_order
+        // Opencart 3 expects sort_order to be shipping_*_sort_order
         if (version_compare(VERSION, '3.0.0', '>=') && isset($this->request->post[Params::PREFIX . 'sort_order'])) {
             $this->request->post['shipping_' . Params::PREFIX . 'sort_order'] = $this->request->post[Params::PREFIX . 'sort_order'];
             unset($this->request->post[Params::PREFIX . 'sort_order']);
         }
     }
-
-    // protected function hasAccess()
-    // {
-    //     // if (!$this->user->hasPermission('modify', 'sale/order')) {
-    //     //     $this->error['warning'] = $this->language->get('error_permission');
-    //     // }
-
-    //     // return !$this->error;
-    // }
-
-    // private function getDynamicStrings()
-    // {
-    //     $strings = [];
-
-    //     foreach (Service::TYPE_AVAILABLE as $service_type) {
-    //         $service_type_key = Service::getTypeTranslationString($service_type);
-    //         $strings[$service_type_key] = $this->language->get($service_type_key);
-    //     }
-
-    //     foreach (Offer::OFFER_PRIORITY_AVAILABLE as $priority_type) {
-    //         $priority_type_key = Offer::getOfferPriorityTranslationString($priority_type);
-    //         $strings[$priority_type_key] = $this->language->get($priority_type_key);
-    //     }
-
-    //     foreach (Offer::OFFER_PRICE_AVAILABLE as $price_type) {
-    //         $price_type_key = Offer::getOfferPriceTranslationString($price_type);
-    //         $strings[$price_type_key] = $this->language->get($price_type_key);
-    //     }
-
-    //     return $strings;
-    // }
 
     private function getPaginationHtml($current_page, $total_pages, $js_function = '')
     {
@@ -532,7 +321,7 @@ class ControllerExtensionShippingHrxM extends Controller
         return [
             'trans' => $this->getOrderListJsTranslations(),
             // 'call_courier_address' => $this->getSenderInformation(),
-            'ajax_url' => 'index.php?route=extension/shipping/' . Params::SETTINGS_CODE . '/ajax&' . $this->getUserToken()
+            'ajax_url' => $this->getAjaxUrl()
         ];
     }
 
@@ -542,13 +331,6 @@ class ControllerExtensionShippingHrxM extends Controller
 
         $strings = [
             'filter_label_hrx_only', 'filter_option_yes', 'filter_option_no'
-            // 'order_saved', 'order_not_saved', 'bad_response', 'label_registered', 'no_data_changes',
-            // 'confirm_new_label', 'refresh_now_btn', 'btn_no', 'btn_yes', 'tooltip_btn_print_register',
-            // 'tooltip_btn_call_courier', 'confirm_call_courier', 'alert_no_orders', 'confirm_print_labels',
-            // 'alert_response_error', 'alert_no_pdf', 'alert_bad_response', 'notify_courrier_called',
-            // 'notify_courrier_call_failed', 'option_yes', 'option_no', 'tooltip_btn_manifest',
-            // 'filter_label_omniva_only', 'filter_label_has_label', 'filter_label_in_manifest',
-            // 'no_results', 'confirm_create_manifest'
         ];
 
         $translations = [];
@@ -558,6 +340,11 @@ class ControllerExtensionShippingHrxM extends Controller
         }
 
         return $translations;
+    }
+
+    public function getAjaxUrl()
+    {
+        return 'index.php?route=extension/shipping/' . Params::SETTINGS_CODE . '/ajax&' . $this->getUserToken();
     }
 
     public function ajax()
@@ -575,22 +362,28 @@ class ControllerExtensionShippingHrxM extends Controller
 
         switch ($_GET['action']) {
             case 'testToken':
-                $this->testToken($response);
+                $this->ajaxTestToken($response);
                 break;
             case 'syncWarehouse':
-                $this->syncWarehouse($response);
+                $this->ajaxSyncWarehouse($response);
                 break;
             case 'getWarehousePage':
-                $this->getWarehousePage($response);
+                $this->ajaxGetWarehousePage($response);
                 break;
             case 'setDefaultWarehouse':
-                $this->setDefaultWarehouse($response);
+                $this->ajaxSetDefaultWarehouse($response);
                 break;
             case 'syncDeliveryPoints':
-                $this->syncDeliveryPoints($response);
+                $this->ajaxSyncDeliveryPoints($response);
                 break;
             case 'getDeliveryPointsPage':
-                $this->getDeliveryPointsPage($response);
+                $this->ajaxGetDeliveryPointsPage($response);
+                break;
+            case 'syncCourierDeliveryLocations':
+                $this->ajaxSyncCourierDeliveryLocations($response);
+                break;
+            case 'getDeliveryLocationsPage':
+                $this->ajaxGetDeliveryLocationsPage($response);
                 break;
             case 'savePrice':
                 $response->addData('action', 'savePrice');
@@ -598,20 +391,65 @@ class ControllerExtensionShippingHrxM extends Controller
                 break;
             case 'deletePrice':
                 $response->addData('action', 'deletePrice');
-                $this->deletePrice($response);
+                $this->ajaxDeletePrice($response);
+                break;
+            case 'getParcelDefaultPage':
+                $response->addData('action', 'getParcelDefaultPage');
+                $this->ajaxGetParcelDefaultPage($response);
+                break;
+            case 'saveParcelDefault':
+                $response->addData('action', 'saveParcelDefault');
+                $this->ajaxSaveParcelDefault($response);
+                break;
+            case 'resetParcelDefault':
+                $response->addData('action', 'resetParcelDefault');
+                $this->ajaxResetParcelDefault($response);
                 break;
                 // MANIFEST PAGE
             case 'getManifestPage':
                 $response->addData('action', 'getManifestPage');
-                $this->getManifestPage($response);
+                $this->ajaxGetManifestPage($response);
                 break;
             case 'registerHrxOrder':
                 $response->addData('action', 'registerHrxOrder');
-                $this->registerHrxOrder($response);
+                $this->ajaxRegisterHrxOrder($response);
                 break;
             case 'getLabel':
                 $response->addData('action', 'getLabel');
-                $this->getLabel($response);
+                $this->ajaxGetLabel($response);
+                break;
+            case 'getMultipleLabels':
+                $response->addData('action', 'getMultipleLabels');
+                $this->ajaxGetMultipleLabels($response);
+                break;
+            case 'getHrxOrderData':
+                $response->addData('action', 'getHrxOrderData');
+                $this->ajaxGetHrxOrderData($response);
+                break;
+            case 'changeHrxOrderState':
+                $response->addData('action', 'changeHrxOrderState');
+                $this->ajaxChangeHrxOrderState($response);
+                break;
+            case 'massChangeHrxOrderState':
+                $response->addData('action', 'massChangeHrxOrderState');
+                $this->ajaxMassChangeHrxOrderState($response);
+                break;
+            case 'cancelHrxOrder':
+                $response->addData('action', 'cancelHrxOrder');
+                $this->ajaxCancelHrxOrder($response);
+                break;
+            case 'refreshOrdersDataFromApi':
+                $response->addData('action', 'refreshOrdersDataFromApi');
+                $this->ajaxRefreshOrdersDataFromApi($response);
+                break;
+                // ORDER PANEL
+            case 'editOrder':
+                $response->addData('action', 'editOrder');
+                $this->ajaxEditOrder($response);
+                break;
+            case 'getHrxTrackingInfo':
+                $response->addData('action', 'getHrxTrackingInfo');
+                $this->ajaxGetHrxTrackingInfo($response);
                 break;
 
             default:
@@ -623,7 +461,7 @@ class ControllerExtensionShippingHrxM extends Controller
         $this->response->setOutput(json_encode($response));
     }
 
-    private function testToken(AjaxResponse $response)
+    private function ajaxTestToken(AjaxResponse $response)
     {
         $token = isset($this->request->post['hrx_tokent']) ? $this->request->post['hrx_tokent'] : '';
         $test_mode = (bool) (isset($this->request->post['hrx_test_mode']) ? $this->request->post['hrx_test_mode'] : false);
@@ -634,7 +472,7 @@ class ControllerExtensionShippingHrxM extends Controller
             ->addData('token', Helper::checkToken($token, $test_mode, false));
     }
 
-    private function syncWarehouse(AjaxResponse $response)
+    private function ajaxSyncWarehouse(AjaxResponse $response)
     {
         $token = $this->config->get(Params::CONFIG_TOKEN);
         $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
@@ -682,7 +520,7 @@ class ControllerExtensionShippingHrxM extends Controller
         }
     }
 
-    private function getWarehousePage(AjaxResponse $response)
+    private function ajaxGetWarehousePage(AjaxResponse $response)
     {
         $page = (int) (isset($this->request->post['page']) ? $this->request->post['page'] : 1);
 
@@ -717,7 +555,7 @@ class ControllerExtensionShippingHrxM extends Controller
         return $this->load->view('extension/shipping/hrx_m/partial/tab_warehouse', $data);
     }
 
-    private function setDefaultWarehouse(AjaxResponse $response)
+    private function ajaxSetDefaultWarehouse(AjaxResponse $response)
     {
         $id = isset($this->request->post['warehouse_id']) ? $this->request->post['warehouse_id'] : null;
 
@@ -729,7 +567,7 @@ class ControllerExtensionShippingHrxM extends Controller
         $response->addData('defaultWarehouse', Warehouse::setDefaultWarehouse($id, $this->db));
     }
 
-    private function syncDeliveryPoints(AjaxResponse $response)
+    private function ajaxSyncDeliveryPoints(AjaxResponse $response)
     {
         $token = $this->config->get(Params::CONFIG_TOKEN);
         $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
@@ -776,7 +614,7 @@ class ControllerExtensionShippingHrxM extends Controller
         }
     }
 
-    private function getDeliveryPointsPage(AjaxResponse $response)
+    private function ajaxGetDeliveryPointsPage(AjaxResponse $response)
     {
         $page = (int) (isset($this->request->post['page']) ? $this->request->post['page'] : 1);
 
@@ -803,6 +641,84 @@ class ControllerExtensionShippingHrxM extends Controller
         $data['delivery_points_last_update'] = $this->config->get(Params::CONFIG_DELIVERY_POINTS_LAST_UPDATE);
 
         return $this->load->view('extension/shipping/hrx_m/partial/tab_delivery', $data);
+    }
+
+    private function ajaxSyncCourierDeliveryLocations(AjaxResponse $response)
+    {
+        $token = $this->config->get(Params::CONFIG_TOKEN);
+        $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
+
+        $page = (int) (isset($this->request->post['page']) ? $this->request->post['page'] : 1);
+        // $per_page = (int) (isset($this->request->post['per_page']) ? $this->request->post['per_page'] : 10);
+
+        $api = new HrxApi($token, $test_mode);
+        // $response
+        //     ->addData('page', $page)
+        //     ->addData('per_page', $per_page);
+        try {
+            $delivery_locations = $api->getCourierDeliveryLocations();
+
+            /** @var DeliveryCourier[] */
+            $delivery_locations_array = [];
+            foreach ($delivery_locations as $api_delivery_location) {
+                $new_delivery_point = new DeliveryCourier($api_delivery_location);
+                $delivery_locations_array[] = $new_delivery_point;
+            }
+
+            if (!empty($delivery_locations_array)) {
+                // if page set to 1 means start of sync and we need to set all terminals active=0
+                if ($page === 1) {
+                    DeliveryCourier::disableAllLocations($this->db);
+                }
+
+                DeliveryCourier::insertIntoDb($delivery_locations_array, $this->db);
+            }
+
+            // $has_more = (bool) count($delivery_locations);
+            $has_more = false; // currently delivery locations resutls are not paginated
+
+            if (!$has_more) {
+                $this->saveSettings([
+                    Params::CONFIG_DELIVERY_COURIER_LAST_UPDATE => date('Y-m-d H:i:s')
+                ]);
+            }
+
+            $response
+                // ->addData('delivery_points', $delivery_locations)
+                ->addData('locations_loaded', count($delivery_locations))
+                ->addData('hasMore', $has_more);
+        } catch (\Exception $e) {
+            $response->setError($e->getMessage());
+        }
+    }
+
+    private function ajaxGetDeliveryLocationsPage(AjaxResponse $response)
+    {
+        $page = (int) (isset($this->request->post['page']) ? $this->request->post['page'] : 1);
+
+        $response->addData('html', $this->getDeliveryLocationsPagePartial($page));
+    }
+
+    private function getDeliveryLocationsPagePartial($page)
+    {
+        if ((int) $page <= 0) {
+            $page = 1;
+        }
+
+        $page_limit = (int) $this->config->get('config_limit_admin');
+        if ($page_limit <= 0) {
+            $page_limit = 30;
+        }
+
+        $data = [];
+        $data['delivery_locations'] = DeliveryCourier::getPage($page, $page_limit, $this->db);
+
+        $total_pages = ceil(DeliveryCourier::getTotalLocations($this->db, false) / $page_limit);
+
+        $data['delivery_locations_pagination'] = $this->getPaginationHtml($page, $total_pages, 'getDeliveryLocationsPage');
+        $data['delivery_locations_last_update'] = $this->config->get(Params::CONFIG_DELIVERY_COURIER_LAST_UPDATE);
+
+        return $this->load->view('extension/shipping/hrx_m/partial/tab_delivery_courier', $data);
     }
 
     private function getPricesPagePartial($page)
@@ -886,7 +802,7 @@ class ControllerExtensionShippingHrxM extends Controller
         }
     }
 
-    private function deletePrice(AjaxResponse $response)
+    private function ajaxDeletePrice(AjaxResponse $response)
     {
         $country_code = isset($this->request->post['country_code']) ? $this->request->post['country_code'] : null;
 
@@ -898,379 +814,142 @@ class ControllerExtensionShippingHrxM extends Controller
         $response->addData('result', Price::deletePriceStatic($this->db, $country_code));
     }
 
-    // private function resetPdCategory()
-    // {
-    //     $result = [
-    //         'post' => $this->request->post,
-    //         'update_result' => false
-    //     ];
-
-    //     if (!isset($this->request->post['category_id'])) {
-    //         $result['error'] = 'No category ID given';
-    //         return $result;
-    //     }
-
-    //     $category_id = (int) $this->request->post['category_id'];
-
-    //     if ($category_id <= 0) {
-    //         $result['error'] = 'Category ID must be > 0';
-    //         return $result;
-    //     }
-
-    //     $result['update_result'] = ParcelDefault::remove($category_id, $this->db);
-
-    //     return $result;
-    // }
-
-    // private function savePdCategory()
-    // {
-    //     $result = [
-    //         'post' => $this->request->post,
-    //         'update_result' => false
-    //     ];
-
-    //     ParcelDefault::$db = $this->db;
-    //     $parcel_default = new ParcelDefault();
-
-    //     $parcel_default->category_id = (int) $this->request->post['category_id'];
-    //     $parcel_default->weight = (float) $this->request->post['weight'];
-    //     $parcel_default->length = (float) $this->request->post['length'];
-    //     $parcel_default->width = (float) $this->request->post['width'];
-    //     $parcel_default->height = (float) $this->request->post['height'];
-    //     $parcel_default->hs_code = $this->request->post['hs_code'];
-
-    //     $result['validation'] = $parcel_default->fieldValidation();
-    //     $result['parcel_default'] = $parcel_default;
-
-    //     $is_valid = true;
-    //     foreach ($result['validation'] as $validation_result) {
-    //         if (!$validation_result) {
-    //             $is_valid = false;
-    //             break;
-    //         }
-    //     }
-
-    //     if ($is_valid) {
-    //         $result['update_result'] = $parcel_default->save();
-    //     }
-
-    //     return $result;
-    // }
-
-    // private function getPdCategories($page = 1)
-    // {
-    //     $data = [];
-
-    //     $page_limit = (int) $this->config->get('config_limit_admin');
-    //     $this->load->model('catalog/category');
-    //     $filter_data = array(
-    //         'sort'  => 'name',
-    //         'order' => 'ASC',
-    //         'start' => ($page - 1) * $page_limit,
-    //         'limit' => $page_limit
-    //     );
-
-    //     $partial_data = [];
-    //     $partial_data['omniva_int_m_categories'] = $this->model_catalog_category->getCategories($filter_data);
-
-    //     $this->associateWithParcelDefault($partial_data['omniva_int_m_categories']);
-
-    //     $data['global_parcel_default'] = ParcelDefault::getGlobalDefault($this->db);
-    //     $data['pd_categories_partial'] = $this->load->view(
-    //         'extension/shipping/omniva_int_m/pd_categories_partial',
-    //         $partial_data
-    //     );
-
-    //     $category_total = $this->model_catalog_category->getTotalCategories();
-    //     $data['pd_categories_paginator'] = $this->getPagination($page, ceil($category_total / $page_limit));
-
-    //     return $data;
-    // }
-
-    // private function associateWithParcelDefault(&$categories)
-    // {
-    //     $categories_id = array_map(function ($item) {
-    //         return $item['category_id'];
-    //     }, $categories);
-
-    //     $parcel_defaults = ParcelDefault::getMultipleParcelDefault($categories_id, $this->db);
-
-    //     $categories = array_map(function ($item) use ($parcel_defaults) {
-    //         $item['default_data'] = [];
-    //         if (isset($parcel_defaults[$item['category_id']])) {
-    //             $item['default_data'] = $parcel_defaults[$item['category_id']];
-    //         }
-    //         return $item;
-    //     }, $categories);
-    // }
-
-    // private function getOrderPanel()
-    // {
-    //     $result = [];
-    //     if (!isset($this->request->post['order_id'])) {
-    //         $result['error'] = 'Missing Order ID';
-    //         return $result;
-    //     }
-
-    //     $order_id =  (int) $this->request->post['order_id'];
-
-    //     $data = [];
-
-    //     $data['order_id'] = $order_id;
-
-    //     $order_data = Offer::getOrderOffer($order_id, $this->db);
-
-    //     if (empty($order_data)) {
-    //         return [
-    //             'error' => 'Omniva International: Order has no offers associated'
-    //         ];
-    //     }
-
-    //     $data['offer'] = Helper::base64Decode($order_data['offer_data'], false);
-    //     $data['is_terminal'] = (bool) $data['offer']['parcel_terminal_type'];
-
-    //     $data['terminal_data'] = Helper::base64Decode($order_data['terminal_data'], false);
-    //     $data['terminal_id'] = $order_data['terminal_id'];
-
-    //     $data['api_url'] = (bool) $this->config->get(Params::PREFIX . 'api_test_mode') ? Params::API_URL_TEST : Params::API_URL;
-
-    //     $this->load->model('sale/order');
-    //     $order_products =  $this->model_sale_order->getOrderProducts($order_id);
-    //     $products_data = ParcelCtrl::getProductsDataByOrder($order_id, $this->db);
-
-    //     foreach ($order_products as $key => $product) {
-    //         $product = array_merge($product, $products_data[$product['product_id']]);
-    //         $order_products[$key] = $product;
-    //     }
-
-    //     $data['products'] = $order_products;
-    //     $data['order'] = $this->model_sale_order->getOrder($order_id);
-
-    //     $data['parcels'] = ParcelCtrl::makeParcelsFromCart($order_products, $this->db, $this->weight, $this->length);
-    //     $country = new Country($data['order']['shipping_iso_code_2'], $this->db);
-    //     $data['items'] = ParcelCtrl::makeItemsFromProducts($order_products, $country);
-
-    //     $data['shipment_status'] = 'Shipment has yet to be registered';
-
-    //     $sql = $this->db->query("
-    //         SELECT api_cart_id, api_shipment_id FROM " . DB_PREFIX . "omniva_int_m_order_api 
-    //         WHERE order_id = " . (int) $order_id . " AND canceled = 0
-    //         ORDER BY order_id DESC 
-    //         LIMIT 1
-    //     ");
-
-    //     $data['api_data'] = false;
-    //     if ($sql->rows) {
-    //         $data['api_data'] = [
-    //             'manifest_id' => $sql->row['api_cart_id'],
-    //             'shipment_id' => $sql->row['api_shipment_id']
-    //         ];
-
-    //         $data['shipment_status'] = 'Registered. Generating label';
-    //     }
-
-    //     // $data['next_manifest'] = null;
-    //     try {
-    //         // $token = $this->config->get(Params::PREFIX . 'api_token');
-    //         // $test_mode = $this->config->get(Params::PREFIX . 'api_test_mode');
-
-    //         Helper::setApiStaticToken($this->config);
-    //         $api = Helper::getApiInstance(); //new API($token, $test_mode);
-
-    //         $this->load->model('sale/order');
-
-    //         $order_products =  $this->model_sale_order->getOrderProducts($order_id);
-    //         $products_data = ParcelCtrl::getProductsDataByOrder($order_id, $this->db);
-
-    //         foreach ($order_products as $key => $product) {
-    //             $product = array_merge($product, $products_data[$product['product_id']]);
-    //             $order_products[$key] = $product;
-    //         }
-
-    //         $data['parcels'] = ParcelCtrl::makeParcelsFromCart($order_products, $this->db, $this->weight, $this->length);
-
-    //         if ($data['api_data']) {
-    //             try {
-    //                 $result['label_response'] = $api->getLabel($data['api_data']['shipment_id']);
-    //                 // $result['label_response'] = $api->getLabel('INT0330371805'); 
-    //                 $data['label_status'] = $result['label_response'];
-    //                 if (isset($result['label_response']->base64pdf) && $result['label_response']->base64pdf) {
-    //                     $data['shipment_status'] = 'Registered. Label generated';
-    //                 }
-    //             } catch (\Exception $e) {
-    //                 $result['label_response'] = $e->getMessage();
-    //                 $data['label_status'] = null;
-    //             }
-    //             try {
-    //                 $result['track_response'] = $api->trackOrder($data['api_data']['shipment_id']);
-    //             } catch (\Exception $e) {
-    //                 $result['track_response'] = $e->getMessage();
-    //             }
-    //         }
-    //     } catch (\Throwable $th) {
-    //         return [
-    //             'error' => 'An error occured while trying to generate Omniva International panel: ' . $th->getMessage()
-    //         ];
-    //     } catch (\Exception $th) {
-    //         return [
-    //             'error' => 'An error occured while trying to generate Omniva International panel: ' . $th->getMessage()
-    //         ];
-    //     }
-
-    //     $result['panelHtml'] = $this->load->view('extension/shipping/omniva_int_m/order_panel', $data);
-    //     return $result;
-    // }
-
-    // private function registerShipment()
-    // {
-    //     $result = [];
-    //     if (!isset($this->request->post['order_id'])) {
-    //         $result['error'] = 'Missing Order ID';
-    //         return $result;
-    //     }
-
-    //     $order_id =  (int) $this->request->post['order_id'];
-
-    //     $order_offer = Offer::getOrderOffer($order_id, $this->db);
-
-    //     if (empty($order_offer)) {
-    //         return [
-    //             'error' => 'Failed to load order offer information from database'
-    //         ];
-    //     }
-
-    //     try {
-    //         $service_code = $order_offer['selected_service'];
-    //         $offer_data = Helper::base64Decode($order_offer['offer_data'], false);
-    //         $terminal_data = null;
-    //         if ($offer_data['parcel_terminal_type']) {
-    //             $terminal_data = Helper::base64Decode($order_offer['terminal_data'], false);
-    //         }
-
-    //         $this->load->model('sale/order');
-    //         $order =  $this->model_sale_order->getOrder($order_id);
-    //         $order_products =  $this->model_sale_order->getOrderProducts($order_id);
-
-    //         $country = new Country($order['shipping_iso_code_2'], $this->db);
-
-    //         $products_data = ParcelCtrl::getProductsDataByOrder($order_id, $this->db);
-
-    //         foreach ($order_products as $key => $product) {
-    //             $product = array_merge($product, $products_data[$product['product_id']]);
-    //             $order_products[$key] = $product;
-    //         }
-
-    //         // HS Code for now using global default
-    //         $parcel_default = ParcelDefault::getGlobalDefault($this->db);
-    //         $order['omniva_int_m_hs_code'] = $parcel_default->hs_code;
-
-
-    //         $parcels = ParcelCtrl::makeParcelsFromCart($order_products, $this->db, $this->weight, $this->length);
-    //         $items = ParcelCtrl::makeItemsFromProducts($order_products, $country);
-
-    //         $option_id = str_replace('omniva_int_m.', '', $order['shipping_code']);
-    //         $option_id = explode('_', $option_id)[1];
-
-    //         $shipping_option = ShippingOption::getShippingOption($option_id, $this->db, false);
-
-    //         if (!$shipping_option) {
-    //             throw new \Exception("Omniva International shipping option ID $option_id no longer available", 1);
-    //         }
-
-    //         $api_order = new Order();
-    //         $api_order
-    //             ->setServiceCode($service_code)
-    //             ->setSender(Helper::getSender($this->config, $this->db))
-    //             ->setReceiver(Helper::getReceiver($order, $country, $shipping_option->type, $terminal_data))
-    //             ->setReference($order_id)
-    //             ->setParcels($parcels)
-    //             ->setItems($items);
-
-    //         // $token = $this->config->get(Params::PREFIX . 'api_token');
-    //         // $test_mode = $this->config->get(Params::PREFIX . 'api_test_mode');
-
-    //         Helper::setApiStaticToken($this->config);
-    //         $api = Helper::getApiInstance();
-    //         // $api = new API($token, $test_mode);
-    //         $response = $api->generateOrder($api_order);
-
-    //         if (!$response || !isset($response->cart_id) || !isset($response->shipment_id)) {
-    //             throw new Exception("Failed to receive response from API", 1);
-    //         }
-
-    //         $created_at = DateTime::createFromFormat("Y-m-d\TH:i:s.uP", $response->created_at);
-
-    //         $this->db->query("
-    //             INSERT INTO " . DB_PREFIX . "omniva_int_m_order_api
-    //             (order_id, api_cart_id, api_shipment_id, created_at)
-    //             VALUES (" . (int) $order_id . ", '" . $response->cart_id . "', '" . $response->shipment_id . "', '" . $created_at->format('Y-m-d H:i:s') . "')
-    //         ");
-    //     } catch (\Exception $th) {
-    //         return [
-    //             'error' => $th->getMessage()
-    //         ];
-    //     }
-
-    //     $data['parcels'] = $parcels;
-    //     $data['api_data'] = [
-    //         'shipment_id' => $response->shipment_id,
-    //         'manifest_id' => $response->cart_id
-    //     ];
-    //     $data['shipment_status'] = 'Registered. Generating label';
-
-    //     return [
-    //         // 'panelHtml' => $this->load->view('extension/shipping/omniva_int_m/order_panel', $data),
-    //         'api_order' => json_decode($api_order->returnJson()),
-    //         'response' => $response
-    //     ];
-    // }
-
-    // private function getLabel()
-    // {
-    //     $result = [];
-    //     if (!isset($this->request->post['order_id'])) {
-    //         $result['error'] = 'Missing Order ID';
-    //         return $result;
-    //     }
-
-    //     $order_id =  (int) $this->request->post['order_id'];
-
-    //     try {
-    //         $sql = $this->db->query("
-    //             SELECT api_cart_id, api_shipment_id FROM " . DB_PREFIX . "omniva_int_m_order_api 
-    //             WHERE order_id = " . (int) $order_id . " AND canceled = 0
-    //             ORDER BY order_id DESC 
-    //             LIMIT 1
-    //         ");
-
-    //         if (!$sql->rows) {
-    //             return [
-    //                 'error' => 'Order hasnt been registered yet'
-    //             ];
-    //         }
-
-    //         $shipment_id = $sql->row['api_shipment_id'];
-    //         $cart_id = $sql->row['api_cart_id'];
-
-    //         // $token = $this->config->get(Params::PREFIX . 'api_token');
-    //         // $test_mode = $this->config->get(Params::PREFIX . 'api_test_mode');
-    //         // $shipment_id = 'INT0330371805';
-    //         Helper::setApiStaticToken($this->config);
-    //         $api = Helper::getApiInstance();
-    //         // $api = new API($token, $test_mode);
-    //         $response = $api->getLabel($shipment_id);
-    //     } catch (\Exception $th) {
-    //         return [
-    //             'error' => $th->getMessage()
-    //         ];
-    //     }
-
-    //     return [
-    //         'manifest_id' => $cart_id,
-    //         'shipment_id' => $shipment_id,
-    //         'response' => $response
-    //     ];
-    // }
+    private function getParcelDefaultTab()
+    {
+        $data = [];
+
+        $data['global_parcel_default'] = ParcelDefault::getGlobalDefault($this->db);
+
+        $data['parcel_default_global_html'] = $this->load->view('extension/shipping/hrx_m/partial/parcel_default_global', $data);
+
+        $data['parcel_default_category_table'] = $this->getParcelDefaultPagePartial(1);
+
+        return $this->load->view('extension/shipping/hrx_m/partial/tab_parcel_default', $data);
+    }
+
+    private function ajaxGetParcelDefaultPage(AjaxResponse $response)
+    {
+        $page = (int) (isset($this->request->post['page']) ? $this->request->post['page'] : 1);
+
+        $response->addData('html', $this->getParcelDefaultPagePartial($page));
+    }
+
+    private function getParcelDefaultPagePartial($page)
+    {
+        if ((int) $page <= 0) {
+            $page = 1;
+        }
+
+        $page_limit = (int) $this->config->get('config_limit_admin');
+        if ($page_limit <= 0) {
+            $page_limit = 30;
+        }
+
+        $this->load->model('catalog/category');
+
+        $data = [];
+
+        $filter_data = array(
+            'sort'  => 'name',
+            'order' => 'ASC',
+            'start' => ($page - 1) * $page_limit,
+            'limit' => $page_limit
+        );
+
+        $total_categories = $this->model_catalog_category->getTotalCategories();
+        $total_pages = ceil($total_categories / $page_limit);
+
+        $data = [];
+        $oc_categories = ParcelDefault::addDefaultsIntoOcCategoryData(
+            $this->model_catalog_category->getCategories($filter_data),
+            $this->db
+        );
+
+        $data['category_list'] = [];
+        foreach ($oc_categories as $oc_category) {
+            $data['category_list'][] = $this->load->view('extension/shipping/hrx_m/partial/parcel_default_category_table_row', $oc_category);
+        }
+
+        $data['parcel_default_pagination'] = $this->getPaginationHtml($page, $total_pages, 'getParcelDefaultPage');
+
+        return $this->load->view('extension/shipping/hrx_m/partial/parcel_default_category_table', $data);
+    }
+
+    private function ajaxResetParcelDefault(AjaxResponse $response)
+    {
+        $category_id = (int) $this->request->post['category_id'];
+
+        if ($category_id <= 0) {
+            return;
+        }
+
+        if (!ParcelDefault::remove($category_id, $this->db)) {
+            $response->setError('Failed to remove default dimmension for category ID ' . $category_id);
+            return;
+        }
+
+        $this->load->model('catalog/category');
+
+        $oc_category = $this->model_catalog_category->getCategory($category_id);
+        $oc_category['hrx_parcel_default'] = null;
+
+        $response->addData(
+            'html',
+            $this->load->view('extension/shipping/hrx_m/partial/parcel_default_category_table_row', $oc_category)
+        );
+    }
+
+    private function ajaxSaveParcelDefault(AjaxResponse $response)
+    {
+        $parcel_default = new ParcelDefault($this->db);
+
+        $parcel_default->category_id = (int) $this->request->post['category_id'];
+        $parcel_default->weight = (float) $this->request->post['weight'];
+        $parcel_default->length = (float) $this->request->post['length'];
+        $parcel_default->width = (float) $this->request->post['width'];
+        $parcel_default->height = (float) $this->request->post['height'];
+
+        $validation = $parcel_default->fieldValidation();
+        $response->addData('validation', $validation);
+        $response->addData('parcel_default', $parcel_default);
+
+        $is_valid = true;
+        foreach ($validation as $validation_result) {
+            if (!$validation_result) {
+                $is_valid = false;
+                break;
+            }
+        }
+
+        $response->addData('validated', $is_valid);
+
+        if (!$is_valid) {
+            $response->addData('save_result', false);
+            return;
+        }
+
+        $response->addData('save_result', $parcel_default->save());
+
+        if ($parcel_default->category_id === 0) {
+            $response->addData(
+                'html',
+                $this->load->view('extension/shipping/hrx_m/partial/parcel_default_global', [
+                    'global_parcel_default' => $parcel_default
+                ])
+            );
+            return;
+        }
+
+        $this->load->model('catalog/category');
+
+        $oc_category = $this->model_catalog_category->getCategory($parcel_default->category_id);
+        $oc_category['hrx_parcel_default'] = $parcel_default;
+
+        $response->addData(
+            'html',
+            $this->load->view('extension/shipping/hrx_m/partial/parcel_default_category_table_row', $oc_category)
+        );
+    }
 
     private function getBreadcrumbs($function_name = null)
     {
@@ -1329,18 +1008,11 @@ class ControllerExtensionShippingHrxM extends Controller
 
         $data['breadcrumbs'] = $this->getBreadcrumbs('manifest');
 
-        // $data['breadcrumbs'][] = array(
-        //     'text' => $this->language->get(Params::PREFIX . 'manifest_page_title'),
-        //     'href' => $this->url->link('extension/shipping/omniva_int_m/manifest', $this->getUserToken(), true)
-        // );
-
         $data['header'] = $this->load->controller('common/header');
         $data['column_left'] = $this->load->controller('common/column_left');
         $data['footer'] = $this->load->controller('common/footer');
 
         $data['mijora_common_js_path'] = $this->getMijoraCommonJsPath();
-
-        // $data['manifests_partial'] = $this->getManifestsPartial();
 
         $data['partial_manifest_list'] = $this->getManifestPagePartial(1);
 
@@ -1348,7 +1020,7 @@ class ControllerExtensionShippingHrxM extends Controller
         $data['order_statuses'] = $this->model_localisation_order_status->getOrderStatuses();
 
         $data['hrx_m_data'] = [
-            'url_ajax' => 'index.php?route=extension/shipping/' . Params::SETTINGS_CODE . '/ajax&' . $this->getUserToken(),
+            'url_ajax' => $this->getAjaxUrl(),
             'default_warehouse' => Warehouse::getDefaultWarehouse($this->db),
             'ts' => [
                 'no_default_warehouse' => $this->language->get(Params::PREFIX . 'alert_no_default_warehouse')
@@ -1358,7 +1030,7 @@ class ControllerExtensionShippingHrxM extends Controller
         $this->response->setOutput($this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/manifest', $data));
     }
 
-    private function getManifestPage(AjaxResponse $response)
+    private function ajaxGetManifestPage(AjaxResponse $response)
     {
         $page = (int) (isset($this->request->post['page']) ? $this->request->post['page'] : 1);
 
@@ -1379,6 +1051,7 @@ class ControllerExtensionShippingHrxM extends Controller
             'filter_order_id' => null,
             'filter_customer' => null,
             'filter_hrx_id' => null,
+            'filter_hrx_tracking_num' => null,
             'filter_order_status_id' => null,
             'filter_is_registered' => null,
             'filter_has_manifest' => null,
@@ -1404,6 +1077,10 @@ class ControllerExtensionShippingHrxM extends Controller
 
         if (isset($this->request->post['filter_hrx_id']) && !empty($this->request->post['filter_hrx_id'])) {
             $filter['filter_hrx_id'] = $this->request->post['filter_hrx_id'];
+        }
+
+        if (isset($this->request->post['filter_hrx_tracking_num']) && !empty($this->request->post['filter_hrx_tracking_num'])) {
+            $filter['filter_hrx_tracking_num'] = $this->request->post['filter_hrx_tracking_num'];
         }
 
         if (isset($this->request->post['filter_order_status_id'])) {
@@ -1459,9 +1136,10 @@ class ControllerExtensionShippingHrxM extends Controller
         return $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list', $data);
     }
 
-    private function registerHrxOrder(AjaxResponse $response)
+    private function ajaxRegisterHrxOrder(AjaxResponse $response)
     {
         $order_id = isset($this->request->post['order_id']) ? $this->request->post['order_id'] : null;
+        $is_order_panel = (bool) (isset($this->request->post['is_order_panel']) ? $this->request->post['is_order_panel'] : false);
 
         if (!$order_id) {
             $response->setError('Order ID required');
@@ -1472,10 +1150,12 @@ class ControllerExtensionShippingHrxM extends Controller
 
         $order = Order::getManifestOrder($this->db, $order_id, $id_language);
 
-        if ($order->getHrxOrderId()) {
+        if ($order->getHrxOrderId() && !$order->canRegisterAgain()) {
             $response->setError($this->language->get(Params::PREFIX . 'notify_is_registered'));
             return;
         }
+
+        $shipping_id = $order->getShippingCode(true);
 
         try {
 
@@ -1487,33 +1167,94 @@ class ControllerExtensionShippingHrxM extends Controller
             $this->load->model('sale/order');
 
             $oc_order = $this->model_sale_order->getOrder($order->getOrderId());
-            $terminal = DeliveryPoint::getDeliveryPointById($order->getShippingCode(true), $this->db);
+
+            $delivery_location = $shipping_id === Order::ORDER_TYPE_COURIER ?
+                DeliveryCourier::getDeliveryLocationByCountryCode($oc_order['shipping_iso_code_2'], $this->db) :
+                DeliveryPoint::getDeliveryPointById($shipping_id, $this->db);
+
+            if (!$delivery_location->country || !$delivery_location->active) {
+                throw new Exception($this->language->get(Params::PREFIX . 'exception_delivery_location_unavailable'));
+            }
+
             $default_warehouse = Warehouse::getDefaultWarehouse($this->db);
+
+            $warehouse_id = $default_warehouse->id;
+            if ($order->getCustomWarehouseId()) {
+                $warehouse_id = Warehouse::getWarehouse($order->getCustomWarehouseId(), $this->db)->id;
+            }
+
+            if (!$warehouse_id) {
+                throw new Exception($this->language->get(Params::PREFIX . 'notify_warehouse_not_found'));
+            }
+
+            // get set parcel box size or if none is set try and predict the size
+            $parcel_box = [];
+            if ($order->hasValidCustomDimensions()) {
+                // get rotated sizes (as parcel would fit destination)
+                $parcel_box = $this->getCustomParcelBoxSize($order, $delivery_location, true);
+            } else {
+                $parcel_box = $this->getPredictedParcelBoxSize($order, $delivery_location);
+            }
+
+            // check that box is marked as fitting destination limits
+            if (!isset($parcel_box['fits']) || !$parcel_box['fits']) {
+                throw new Exception($this->language->get(Params::PREFIX . 'warning_does_not_fit'));
+            }
+
+            $min_box_size = $delivery_location->getMinDimensions(false);
+
             /*** Create order ***/
-            $phone = str_replace($terminal->getRecipientPhonePrefix(), '', $oc_order['telephone']);
-            $response->addData('phone', [$terminal->getRecipientPhonePrefix(), $phone]);
+            $phone = str_replace($delivery_location->getRecipientPhonePrefix(), '', $oc_order['telephone']);
+            $response->addData('phone', [$delivery_location->getRecipientPhonePrefix(), $phone]);
 
             $receiver = new HrxReceiver();
-            $receiver->setName($order->getCustomer());
-            $receiver->setEmail($oc_order['email']);
-            $receiver->setPhone($phone); // $terminal->getRecipientPhoneRegexp()
+
+            if ($shipping_id !== Order::ORDER_TYPE_COURIER) {
+                $receiver
+                    ->setName($order->getCustomer())
+                    ->setEmail($oc_order['email'])
+                    ->setPhone($phone); // $delivery_location->getRecipientPhoneRegexp()
+            } else {
+                $receiver
+                    ->setName($order->getCustomer()) // Receiver name
+                    ->setEmail($oc_order['email']) // Receiver email
+                    ->setPhone($phone, $delivery_location->getRecipientPhoneRegexp()) // Phone number without code and a second parameter is for check the phone value according to the regex specified in delivery location information
+                    ->setAddress($oc_order['shipping_address_1']) // Receiver address
+                    ->setPostcode($oc_order['shipping_postcode']) // Receiver postcode (zip code)
+                    ->setCity($oc_order['shipping_city']) // Receiver city
+                    ->setCountry($oc_order['shipping_iso_code_2']); // Receiver country code
+            }
+
 
             $shipment = new HrxShipment();
             $shipment->setReference($order->getOrderId());
-            $shipment->setComment('Comment here');
-            $shipment->setLength(15);
-            $shipment->setWidth(15);
-            $shipment->setHeight(15);
-            $shipment->setWeight($this->getOrderWeightInKg($order->getOrderId()));
+            $shipment->setComment($order->getComment());
+            $shipment->setLength(max((float) $parcel_box['length'], (float) $min_box_size[ParcelProduct::DIMENSION_LENGTH]));
+            $shipment->setWidth(max((float) $parcel_box['width'], (float) $min_box_size[ParcelProduct::DIMENSION_WIDTH]));
+            $shipment->setHeight(max((float) $parcel_box['height'], (float) $min_box_size[ParcelProduct::DIMENSION_HEIGHT]));
+            $shipment->setWeight(max((float) $parcel_box['weight'], (float) $delivery_location->getMinWeight()));
+            // $shipment->setWeight($this->getOrderWeightInKg($order->getOrderId()));
 
             $hrx_order_obj = new HrxOrder();
             $hrx_order_obj->setPickupLocationId($default_warehouse->id);
-            $hrx_order_obj->setDeliveryLocation($terminal->id);
+
+            if ($shipping_id !== Order::ORDER_TYPE_COURIER) {
+                $hrx_order_obj
+                    ->setDeliveryKind(Order::TYPE_DELIVERY_TERMINAL)
+                    ->setDeliveryLocation($delivery_location->id);
+            } else { // asume its courier
+                $hrx_order_obj
+                    ->setDeliveryKind(Order::TYPE_DELIVERY_COURIER);
+            }
+
             $hrx_order_obj->setReceiver($receiver);
             $hrx_order_obj->setShipment($shipment);
             $hrx_order_data = $hrx_order_obj->prepareOrderData();
 
             $response->addData('hrx_order_data', $hrx_order_data);
+
+            // throw new Exception("Only testing");
+
 
             $order_response = $api->generateOrder($hrx_order_data);
             // $order_response = [
@@ -1551,6 +1292,12 @@ class ControllerExtensionShippingHrxM extends Controller
                 $order->save();
                 $response->addData('order', $order);
                 $response->addData('registered', $this->language->get(Params::PREFIX . 'notify_registered_success'));
+
+                if ($is_order_panel) {
+                    // when registering from panel it will request data refresh from js
+                    return;
+                }
+
                 $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', [
                     'order' => $order,
                     'order_url' => $this->url->link('sale/order/info', $this->getUserToken(), true)
@@ -1561,7 +1308,57 @@ class ControllerExtensionShippingHrxM extends Controller
         }
     }
 
-    private function getLabel(AjaxResponse $response)
+    private function ajaxGetMultipleLabels(AjaxResponse $response)
+    {
+        $order_ids = isset($this->request->post['order_id']) ? $this->request->post['order_id'] : [];
+        $label_type = isset($this->request->post['label_type']) ? $this->request->post['label_type'] : null;
+
+        if (!$order_ids) {
+            $response->setError('Order ID required');
+            return;
+        }
+
+        if (!$label_type || !in_array($label_type, ['shipment', 'return'])) {
+            $response->setError('Bad label type');
+            return;
+        }
+
+        $id_language = (int) $this->config->get('config_language_id');
+
+        $filter = [
+            'page' => 1, // doesnt matter
+            'limit' => 1, // doesnt matter
+            'filter_order_id' => null,
+            'filter_order_ids' => $order_ids,
+            'filter_customer' => null,
+            'filter_hrx_id' => null,
+            'filter_hrx_tracking_num' => null,
+            'filter_order_status_id' => null,
+            'filter_is_registered' => null,
+            'filter_has_manifest' => null,
+        ];
+
+        /** @var Order[] */
+        $orders = Order::getManifestOrders($this->db, $filter, $id_language, false);
+
+        $errors = [];
+        $labels = [];
+        foreach ($orders as $order) {
+            try {
+                $labels[$order->getOrderId()] = $this->getLabelFromApi($order, $label_type);
+            } catch (\Throwable $th) {
+                $errors[$order->getOrderId()] = $th->getMessage();
+            }
+        }
+
+        $response->addData('ids', $order_ids);
+        $response->addData('orders', $orders);
+        $response->addData('errors', $errors);
+        $response->addData('labels', $labels);
+        $response->addData('type', $label_type);
+    }
+
+    private function ajaxGetLabel(AjaxResponse $response)
     {
         $order_id = isset($this->request->post['order_id']) ? $this->request->post['order_id'] : null;
         $label_type = isset($this->request->post['label_type']) ? $this->request->post['label_type'] : null;
@@ -1604,18 +1401,41 @@ class ControllerExtensionShippingHrxM extends Controller
         }
     }
 
+    private function getLabelFromApi(Order $order, $label_type = 'shipment')
+    {
+        // needs registration
+        if (!$order->getHrxOrderId()) {
+            throw new Exception($this->language->get(Params::PREFIX . 'error_order_not_registered'));
+        }
+
+        // order canceled
+        if ($order->isCancelled()) {
+            throw new Exception($this->language->get(Params::PREFIX . 'error_order_canceled'));
+        }
+
+        // if label type not shipment, but return label, make sure order has return labels
+        if ($label_type !== 'shipment' && !$order->canPrintReturnLabel()) {
+            throw new Exception($this->language->get(Params::PREFIX . 'error_order_no_return_label'));
+        }
+
+        try {
+            $token = $this->config->get(Params::CONFIG_TOKEN);
+            $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
+
+            $api = new HrxApi($token, $test_mode);
+            if ($label_type === 'shipment') {
+                return $api->getLabel($order->getHrxOrderId());
+            }
+
+            return $api->getReturnLabel($order->getHrxOrderId());
+        } catch (\Throwable $th) {
+            throw new Exception($th->getMessage());
+        }
+    }
+
     private function getOrderWeightInKg($order_id)
     {
-        // Get cart weight
-        // $total_weight = $this->getOrderWeight();
         $kg_weight_class_id = (int) Helper::getWeightClassId($this->db);
-        // Make sure its in kg (we do not support imperial units, so assume weight is in metric units)
-        $weight_class_id = (int) $this->config->get('config_weight_class_id');
-
-        // already in kg
-        // if ($kg_weight_class_id === $weight_class_id) {
-        //     return (float) $total_weight;
-        // }
 
         $total_order_weight = 0;
 
@@ -1657,166 +1477,640 @@ class ControllerExtensionShippingHrxM extends Controller
             $total_order_weight += (float) $weight_in_kg;
         }
 
-        // weight classes different need to convert into kg
         return (float) $total_order_weight;
     }
 
-    // private function getManifestsPartial($page = 1)
-    // {
-    //     $page = (int) $page;
-    //     $page_limit = (int) $this->config->get('config_limit_admin');
-    //     if ($page_limit <= 0) {
-    //         $page_limit = 30;
-    //     }
+    private function ajaxGetHrxOrderData(AjaxResponse $response)
+    {
+        $order_id = isset($this->request->post['order_id']) ? $this->request->post['order_id'] : null;
+        $is_order_panel = (bool) (isset($this->request->post['is_order_panel']) ? $this->request->post['is_order_panel'] : false);
 
-    //     $total = ManifestCtrl::getTotal($this->db);
-    //     $total_pages = ceil($total / $page_limit);
+        if (!$order_id) {
+            $response->setError('Order ID required');
+            return;
+        }
 
-    //     if ($total_pages < 1) {
-    //         $total_pages = 1;
-    //     }
+        // $token = $this->config->get(Params::CONFIG_TOKEN);
+        // $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
 
-    //     if ($page < 1) {
-    //         $page = 1;
-    //     }
+        $id_language = (int) $this->config->get('config_language_id');
 
-    //     if ($page > $total_pages) {
-    //         $page = $total_pages;
-    //     }
+        $order = Order::getManifestOrder($this->db, $order_id, $id_language);
 
-    //     $offset = ($page - 1) * $page_limit;
-    //     $data = [
-    //         'manifests' => ManifestCtrl::list($this->db, $offset, $page_limit)
-    //     ];
+        // needs registration
+        // if (!$order->getHrxOrderId()) {
+        //     $response->setError($this->language->get(Params::PREFIX . 'error_order_not_registered'));   
+        // }
 
+        // // order canceled
+        // if ($order->isCancelled()) {
+        //     $response->setError($this->language->get(Params::PREFIX . 'error_order_canceled'));   
+        // }
 
-    //     $data['paginator'] = '';
-    //     if ($total_pages > 1) {
-    //         $data['paginator'] = $this->getPagination($page, $total_pages);
-    //     }
+        try {
+            // $api = new HrxApi($token, $test_mode);
+            // $order_data = $api->getOrder($order->getHrxOrderId());
 
-    //     return $this->load->view('extension/shipping/omniva_int_m/manifests_partial', $data);
-    // }
+            // if (isset($order_data['id'])) {
+            //     $order->setHrxOrderData($order_data);
+            //     $order->save();
+            // }
 
-    // private function loadManifestPage()
-    // {
-    //     $page = 1;
-    //     if (isset($this->request->post['page'])) {
-    //         $page = (int) $this->request->post['page'];
-    //     }
+            // $response->addData('hrx_order', $order_data);
 
-    //     return [
-    //         'html' => $this->getManifestsPartial($page)
-    //     ];
-    // }
+            $this->updateHrxDataFromApi($order);
 
-    // private function getManifest()
-    // {
-    //     $result = [];
-    //     if (!isset($this->request->post['order_id']) && !isset($this->request->post['manifest_id'])) {
-    //         $result['error'] = 'Missing Order or Manifest ID';
-    //         return $result;
-    //     }
+            if ($is_order_panel) {
+                $response->addData('html', $this->getOrderPanelPartial($order_id, $order));
+                return;
+            }
 
-    //     $manifest_id = null;
+            $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', [
+                'order' => $order,
+                'order_url' => $this->url->link('sale/order/info', $this->getUserToken(), true)
+            ]));
+        } catch (\Throwable $th) {
+            $response->setError($th->getMessage());
+        }
+    }
 
-    //     if (isset($this->request->post['order_id'])) {
-    //         $order_id = (int) $this->request->post['order_id'];
+    private function updateHrxDataFromApi(Order $order)
+    {
+        $token = $this->config->get(Params::CONFIG_TOKEN);
+        $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
 
-    //         $sql = $this->db->query("
-    //             SELECT api_cart_id, api_shipment_id FROM " . DB_PREFIX . "omniva_int_m_order_api 
-    //             WHERE order_id = " . (int) $order_id . "  AND canceled = 0
-    //             ORDER BY order_id DESC 
-    //             LIMIT 1
-    //         ");
+        // needs registration
+        if (!$order->getHrxOrderId()) {
+            throw new Exception($this->language->get(Params::PREFIX . 'error_order_not_registered'));
+        }
 
-    //         if (!$sql->rows) {
-    //             return [
-    //                 'error' => 'Order hasnt been registered yet'
-    //             ];
-    //         }
+        // order canceled
+        if ($order->isCancelled()) {
+            throw new Exception($this->language->get(Params::PREFIX . 'error_order_canceled'));
+        }
 
-    //         $shipment_id = $sql->row['api_shipment_id'];
-    //         $manifest_id = $sql->row['api_cart_id'];
-    //     }
+        // can order data be refreshed based on hrx status
+        if (!$order->isRefreshable()) {
+            throw new Exception($this->language->get(Params::PREFIX . 'error_order_not_refreshable'));
+        }
 
-    //     if (isset($this->request->post['manifest_id'])) {
-    //         $manifest_id = strip_tags($this->request->post['manifest_id']);
-    //     }
+        try {
+            $api = new HrxApi($token, $test_mode);
+            $order_data = $api->getOrder($order->getHrxOrderId());
 
-    //     if ($manifest_id === null) {
-    //         return [
-    //             'error' => 'Missing manifest ID'
-    //         ];
-    //     }
-    //     // $manifest_id = 'INCC0425105255'; // to test manifest download
-    //     try {
-    //         // $token = $this->config->get(Params::PREFIX . 'api_token');
-    //         // $test_mode = $this->config->get(Params::PREFIX . 'api_test_mode');
+            if (isset($order_data['id'])) {
+                $order->setHrxOrderData($order_data);
+                return $order->save();
+            }
+        } catch (\Throwable $th) {
+            throw new Exception($th->getMessage());
+        }
 
-    //         Helper::setApiStaticToken($this->config);
-    //         $api = Helper::getApiInstance();
-    //         // $api = new API($token, $test_mode);
+        return false;
+    }
 
-    //         $response = $api->generateManifest($manifest_id);
-    //     } catch (\Exception $th) {
-    //         return [
-    //             'error' => $th->getMessage(),
-    //             'config' => [
-    //                 'token' => Helper::$token,
-    //                 'mode' => Helper::$test_mode,
-    //                 'url' => Helper::getApiUrl(Helper::$test_mode)
-    //             ]
-    //         ];
-    //     }
+    private function ajaxRefreshOrdersDataFromApi(AjaxResponse $response)
+    {
+        $page = (int) (isset($this->request->post['refresh_page']) ? $this->request->post['refresh_page'] : 1);
 
-    //     return [
-    //         'manifest_id' => $manifest_id,
-    //         'shipment_id' => isset($shipment_id) ? $shipment_id : null,
-    //         'response' => $response
-    //     ];
-    // }
+        if ($page <= 0) {
+            $response->setError('No more to refresh');
+            return;
+        }
 
-    // private function updateSelectedTerminal()
-    // {
-    //     $terminal_id = isset($this->request->post['terminal_id']) ? $this->request->post['terminal_id'] : null;
-    //     $order_id = isset($this->request->post['order_id']) ? $this->request->post['order_id'] : null;
+        $response->addData('page', $page);
 
-    //     if (!$terminal_id || !$order_id) {
-    //         return [
-    //             'error' => 'Terminal ID and/or Order ID missing'
-    //         ];
-    //     }
+        $id_language = (int) $this->config->get('config_language_id');
 
-    //     $terminal_id = $this->db->escape(strip_tags($terminal_id));
-    //     $order_id = $this->db->escape(strip_tags($order_id));
+        $filter = [
+            'page' => $page,
+            'limit' => Order::REFRESH_ORDER_DATA_MAX_PER_PAGE,
+            'filter_order_id' => null,
+            'filter_customer' => null,
+            'filter_hrx_id' => null,
+            'filter_hrx_tracking_num' => null,
+            'filter_order_status_id' => null,
+            'filter_is_registered' => 2, // we want only registered orders
+            'filter_has_manifest' => null,
+        ];
 
-    //     $terminal_data = [
-    //         'terminal_id' => $terminal_id,
-    //         'address' => isset($this->request->post['address']) ? strip_tags($this->request->post['address']) : null,
-    //         'city' => isset($this->request->post['city']) ? strip_tags($this->request->post['city']) : null,
-    //         'comment' => isset($this->request->post['comment']) ? strip_tags($this->request->post['comment']) : null,
-    //         'country_code' => isset($this->request->post['country_code']) ? strip_tags($this->request->post['country_code']) : null,
-    //         'identifier' => isset($this->request->post['identifier']) ? strip_tags($this->request->post['identifier']) : null,
-    //         'name' => isset($this->request->post['name']) ? strip_tags($this->request->post['name']) : null,
-    //         'zip' => isset($this->request->post['zip']) ? strip_tags($this->request->post['zip']) : null
-    //     ];
+        /** @var Order[] */
+        $orders = Order::getManifestOrders($this->db, $filter, $id_language, true);
 
-    //     try {
-    //         $result = $this->db->query("
-    //             UPDATE " . DB_PREFIX . "omniva_int_m_order
-    //             SET
-    //                 terminal_id = '" . $terminal_id . "',
-    //                 terminal_data = '" . Helper::base64Encode($terminal_data, true) . "'
-    //             WHERE order_id = '" . (int) $order_id . "'
-    //         ");
-    //         return [
-    //             'result' => $result
-    //         ];
-    //     } catch (\Exception $th) {
-    //         return [
-    //             'error' => $th->getMessage()
-    //         ];
-    //     }
-    // }
+        // $response->addData('orders', $orders);
+        $response->addData('refreshed_count', count($orders));
+
+        $errors = [];
+        foreach ($orders as $order) {
+            try {
+                $this->updateHrxDataFromApi($order);
+            } catch (\Throwable $th) {
+                $errors[$order->getOrderId()] = $th->getMessage();
+            }
+        }
+
+        $response->addData('errors', $errors);
+    }
+
+    private function ajaxMassChangeHrxOrderState(AjaxResponse $response)
+    {
+        $order_ids = isset($this->request->post['order_id']) ? $this->request->post['order_id'] : [];
+        $state = (bool) (isset($this->request->post['state']) ? $this->request->post['state'] : false);
+
+        if (!$order_ids) {
+            $response->setError('Order ID required');
+            return;
+        }
+
+        $id_language = (int) $this->config->get('config_language_id');
+
+        $filter = [
+            'page' => 1, // doesnt matter
+            'limit' => 1, // doesnt matter
+            'filter_order_id' => null,
+            'filter_order_ids' => $order_ids,
+            'filter_customer' => null,
+            'filter_hrx_id' => null,
+            'filter_hrx_tracking_num' => null,
+            'filter_order_status_id' => null,
+            'filter_is_registered' => null,
+            'filter_has_manifest' => null,
+        ];
+
+        /** @var Order[] */
+        $orders = Order::getManifestOrders($this->db, $filter, $id_language, false);
+
+        $errors = [];
+        $state_change = [];
+        foreach ($orders as $order) {
+            try {
+                $state_change[$order->getOrderId()] = $this->changeOrderStateFromApi($order, $state);
+            } catch (\Throwable $th) {
+                $errors[$order->getOrderId()] = $th->getMessage();
+            }
+        }
+
+        $response->addData('ids', $order_ids);
+        // $response->addData('orders', $orders);
+        $response->addData('errors', $errors);
+        $response->addData('reload_page', !empty($state_change));
+        $response->addData('state', $state);
+    }
+
+    private function ajaxChangeHrxOrderState(AjaxResponse $response)
+    {
+        $state = (bool) (isset($this->request->post['state']) ? $this->request->post['state'] : false);
+
+        $order_id = isset($this->request->post['order_id']) ? $this->request->post['order_id'] : null;
+        $is_order_panel = (bool) (isset($this->request->post['is_order_panel']) ? $this->request->post['is_order_panel'] : false);
+
+        if (!$order_id) {
+            $response->setError('Order ID required');
+            return;
+        }
+
+        $id_language = (int) $this->config->get('config_language_id');
+
+        $order = Order::getManifestOrder($this->db, $order_id, $id_language);
+
+        try {
+            $this->changeOrderStateFromApi($order, $state);
+
+            if ($is_order_panel) {
+                $response->addData('html', $this->getOrderPanelPartial($order_id, $order));
+                return;
+            }
+
+            $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', [
+                'order' => $order,
+                'order_url' => $this->url->link('sale/order/info', $this->getUserToken(), true)
+            ]));
+        } catch (\Throwable $th) {
+            $response->setError($th->getMessage());
+        }
+    }
+
+    private function changeOrderStateFromApi(Order $order, bool $state)
+    {
+        $token = $this->config->get(Params::CONFIG_TOKEN);
+        $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
+
+        // needs registration
+        if (!$order->getHrxOrderId()) {
+            throw new Exception($this->language->get(Params::PREFIX . 'error_order_not_registered'));
+        }
+
+        // order canceled
+        if ($order->isCancelled()) {
+            throw new Exception($this->language->get(Params::PREFIX . 'error_order_canceled'));
+        }
+
+        // order cant change status
+        if (!$order->canUpdateReadyState()) {
+            throw new Exception($this->language->get(Params::PREFIX . 'notify_cant_change_status'));
+        }
+
+        // no need to change state if order allready in that state (at this point it can be only new or ready since canUpdateReadyState() validates this)
+        if (($state && $order->isReadyForPickup()) || (!$state && !$order->isReadyForPickup())) {
+            throw new Exception($this->language->get(Params::PREFIX . 'notify_no_change_status'));
+        }
+
+        try {
+            $api = new HrxApi($token, $test_mode);
+
+            $order_data = $api->changeOrderReadyState($order->getHrxOrderId(), $state);
+
+            if (isset($order_data['id'])) {
+                $order->setHrxOrderData($order_data);
+                $order->save();
+
+                return true;
+            }
+        } catch (\Throwable $th) {
+            throw new Exception($th->getMessage());
+        }
+
+        return false;
+    }
+
+    private function ajaxCancelHrxOrder(AjaxResponse $response)
+    {
+        $order_id = isset($this->request->post['order_id']) ? $this->request->post['order_id'] : null;
+        $is_order_panel = (bool) (isset($this->request->post['is_order_panel']) ? $this->request->post['is_order_panel'] : false);
+
+        if (!$order_id) {
+            $response->setError('Order ID required');
+            return;
+        }
+
+        $token = $this->config->get(Params::CONFIG_TOKEN);
+        $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
+
+        $id_language = (int) $this->config->get('config_language_id');
+
+        $order = Order::getManifestOrder($this->db, $order_id, $id_language);
+
+        if (!$order->canBeCancelled()) {
+            $response->setError($this->language->get(Params::PREFIX . 'notify_cant_cancel'));
+            return;
+        }
+
+        try {
+            $api = new HrxApi($token, $test_mode);
+
+            $order_data = $api->cancelOrder($order->getHrxOrderId());
+
+            if (isset($order_data['id'])) {
+                $order->setHrxOrderData($order_data);
+                $order->save();
+            }
+
+            $response->addData('hrx_order', $order_data);
+
+            if ($is_order_panel) {
+                $response->addData('html', $this->getOrderPanelPartial($order_id, $order));
+                return;
+            }
+
+            $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', [
+                'order' => $order,
+                'order_url' => $this->url->link('sale/order/info', $this->getUserToken(), true)
+            ]));
+        } catch (\Throwable $th) {
+            $response->setError($th->getMessage());
+        }
+    }
+
+    /**
+     * Order Panel
+     */
+    public function orderInfoPanel($order_data = [])
+    {
+        if (!isset($order_data['order_id'])) {
+            return null;
+        }
+
+        $this->load->language('extension/shipping/hrx_m');
+
+        $data['order_data'] = array_filter($order_data, function ($key) {
+            return !in_array($key, ['header', 'footer', 'column_left']);
+        }, ARRAY_FILTER_USE_KEY);
+
+        $data['mijora_common_js_path'] = $this->getMijoraCommonJsPath();
+
+        $id_language = (int) $this->config->get('config_language_id');
+        $hrx_order = Order::getManifestOrder($this->db, $order_data['order_id'], $id_language);
+        try {
+            $this->updateHrxDataFromApi($hrx_order);
+            $data['refresh_result'] = true;
+        } catch (\Throwable $th) {
+            $data['refresh_result'] = $th->getMessage();
+        }
+
+        $data['hrx_order_panel_partial'] = $this->getOrderPanelPartial($order_data['order_id'], $hrx_order);
+
+        $default_warehouse = Warehouse::getDefaultWarehouse($this->db);
+        $data['url_ajax'] = $this->getAjaxUrl();
+        $data['default_warehouse'] = $default_warehouse;
+        $data['order_id'] = $order_data['order_id'];
+
+        return $this->load->view('extension/shipping/hrx_m/order_panel', $data);
+    }
+
+    public function getOrderPanelPartial($order_id, ?Order $hrx_order = null)
+    {
+        $this->load->language('extension/shipping/hrx_m');
+
+        if (!$hrx_order) {
+            $id_language = (int) $this->config->get('config_language_id');
+            $hrx_order = Order::getManifestOrder($this->db, $order_id, $id_language);
+        }
+        $data['hrx_order'] = $hrx_order;
+
+        $delivery_point = $this->getFromCache('delivery_point');
+        if (!$delivery_point) {
+            $delivery_point = $this->getDeliveryPoint($hrx_order);
+        }
+
+        $delivery_address = 'Courier';
+        if ($hrx_order->getShippingCode(true) !== Order::ORDER_TYPE_COURIER) {
+            $delivery_address = $delivery_point->address;
+        }
+
+        $data['parcel_dimensions'] = 'predicted';
+        if ($hrx_order->hasValidRegisteredDimensions()) {
+            $data['parcel_dimensions'] = 'registered';
+            $box_size = $this->getRegisteredParcelBoxSize($hrx_order);
+        } elseif ($hrx_order->hasValidCustomDimensions()) {
+            $data['parcel_dimensions'] = 'saved';
+            $box_size = $this->getCustomParcelBoxSize($hrx_order, $delivery_point);
+        } else {
+            $box_size = $this->getPredictedParcelBoxSize($hrx_order, $delivery_point);
+        }
+
+        $box_size['address'] = $delivery_address;
+
+        $data['box_size'] = $box_size;
+
+        $data['delivery_point'] = $delivery_point;
+
+        $data['warehouses'] = Warehouse::getPage(1, Warehouse::ALL_WAREHOUSES, $this->db);
+        $default_warehouse = Warehouse::getDefaultWarehouse($this->db);
+
+        $data['default_warehouse'] = $default_warehouse;
+
+        $data['selected_warehouse'] = $default_warehouse->id;
+        $data['notify_missing_warehouse'] = null;
+
+        $custom_warehouse_id = $hrx_order->getCustomWarehouseId();
+
+        if ($custom_warehouse_id && !isset($data['warehouses'][$custom_warehouse_id])) {
+            $this->language->get('hrx_m_warning_notify_missing_warehouse');
+        }
+
+        if ($custom_warehouse_id && isset($data['warehouses'][$custom_warehouse_id])) {
+            $data['selected_warehouse'] = $custom_warehouse_id;
+        }
+
+        $translation_key = 'hrx_m_panel_order_status_' . $hrx_order->getHrxOrderStatus();
+        $translated_string = $this->language->get($translation_key);
+        $data['hrx_m_panel_order_status'] = $translation_key === $translated_string ? $hrx_order->getHrxOrderStatus() : $translated_string;
+
+        $data['events_partial'] = $this->load->view(
+            'extension/shipping/hrx_m/partial/order_panel_tracking_partial',
+            [
+                'track_events' => [],
+                'is_placeholder' => true
+            ]
+        );
+
+        return $this->load->view('extension/shipping/hrx_m/partial/order_panel_partial', $data);
+    }
+
+    private function getDeliveryPoint(Order $hrx_order)
+    {
+        $shipping_code = $hrx_order->getShippingCode(true);
+
+        if ($shipping_code === Order::ORDER_TYPE_COURIER) {
+            return DeliveryCourier::getDeliveryLocationByCountryCode($hrx_order->getCountryCode(), $this->db);
+        }
+
+        return DeliveryPoint::getDeliveryPointById($shipping_code, $this->db);
+    }
+
+    private function getRegisteredParcelBoxSize(Order $hrx_order)
+    {
+        $registered_box_size = $hrx_order->getRegisteredDimensions();
+        $registered_box_size['fits'] = true;
+
+        return $registered_box_size;
+    }
+
+    private function getCustomParcelBoxSize(Order $hrx_order, DeliveryPointInterface $delivery_point, $rotate_to_fit_destination = false)
+    {
+        $custom_box_size = $hrx_order->getCustomDimensions();
+
+        $item_list = new ItemList();
+        $item = new ParcelItem(
+            $custom_box_size['length'],
+            $custom_box_size['width'],
+            $custom_box_size['height'],
+            $custom_box_size['weight'],
+            'custom_parcel'
+        );
+        $item_list->insert($item, 1);
+
+        $packed_box = Helper::getPackedBox($delivery_point, $item_list);
+
+        $custom_box_size['fits'] = $packed_box->getItems()->count() === $item_list->count();
+
+        return $rotate_to_fit_destination === false ? $custom_box_size : [
+            'fits' => $custom_box_size['fits'],
+            'weight' => $packed_box->getWeight() / 1000,
+            'width' => $packed_box->getUsedWidth() / 10,
+            'length' => $packed_box->getUsedLength() / 10,
+            'height' => $packed_box->getUsedDepth() / 10
+        ];
+    }
+
+    private function getPredictedParcelBoxSize(Order $hrx_order, DeliveryPointInterface $delivery_point)
+    {
+        $products = Order::getProductsDataByOrder($hrx_order->getOrderId(), $this->db);
+        /** @var ParcelProduct[] */
+        $product_dimensions = ParcelDefault::getProductDimmensions($products, $this->db, $this->weight, $this->length);
+
+        $item_list = new ItemList();
+        foreach ($product_dimensions as $key => $dimensions) {
+            $item = new ParcelItem(
+                $dimensions->length,
+                $dimensions->width,
+                $dimensions->height,
+                $dimensions->weight,
+                'product_' . $key
+            );
+            $item_list->insert($item, $dimensions->quantity);
+        }
+
+        $packed_box = Helper::getPackedBox($delivery_point, $item_list);
+
+        return [
+            'fits' => $packed_box->getItems()->count() === $item_list->count(),
+            'weight' => $packed_box->getWeight() / 1000,
+            'width' => $packed_box->getUsedWidth() / 10,
+            'length' => $packed_box->getUsedLength() / 10,
+            'height' => $packed_box->getUsedDepth() / 10
+        ];
+    }
+
+    private function ajaxEditOrder(AjaxResponse $response)
+    {
+        $order_id = isset($this->request->post['order_id']) ? $this->request->post['order_id'] : null;
+
+        if (!$order_id) {
+            $response->setError('Order ID required');
+            return;
+        }
+
+        $id_language = (int) $this->config->get('config_language_id');
+        $hrx_order = Order::getManifestOrder($this->db, $order_id, $id_language);
+
+        /**
+         * Check for changed comment
+         */
+        $comment = isset($this->request->post['hrx_comment']) ? $this->request->post['hrx_comment'] : null;
+
+        if ($comment && (strlen($comment) > 255 || !preg_match('/^[\d\s\p{L}\_\-]+$/', $comment))) {
+            $response->setError($this->language->get('hrx_m_warning_bad_comment'));
+        }
+
+        if ($comment !== null) {
+            $hrx_order->setCustomHrxData('comment', $comment);
+        }
+        /**
+         * Comment check end
+         */
+
+        /**
+         * Check for changed warehouse
+         */
+        $warehouse_id = isset($this->request->post['hrx_warehouse']) ? $this->request->post['hrx_warehouse'] : null;
+        if ($warehouse_id) {
+            $custom_warehouse = Warehouse::getWarehouse($warehouse_id, $this->db);
+            if (!$custom_warehouse->id) {
+                $response->setError($this->language->get('hrx_m_warning_warehouse_not_found'));
+                return;
+            }
+
+            $hrx_order->setCustomHrxData('warehouse_id', $custom_warehouse->id);
+        }
+        /**
+         * Warehouse check end
+         */
+
+        /**
+         * Parcel size change detection
+         */
+        $new_parcel_size = [];
+        foreach (['width', 'length', 'height', 'weight'] as $key) {
+            $new_parcel_size[$key] = (float) (isset($this->request->post['hrx_' . $key]) ? $this->request->post['hrx_' . $key] : null);
+        }
+
+        $new_parcel_size = array_filter($new_parcel_size, function ($item) {
+            return $item !== null && $item > 0.0;
+        });
+
+        if (count($new_parcel_size) !== 4) {
+            $response->setError($this->language->get('hrx_m_warning_missing_dimensions'));
+            return;
+        }
+
+        $delivery_point = $this->getDeliveryPoint($hrx_order);
+
+        $item_list = new ItemList();
+
+        $item = new ParcelItem(
+            $new_parcel_size['length'],
+            $new_parcel_size['width'],
+            $new_parcel_size['height'],
+            $new_parcel_size['weight'],
+            'custom_parcel'
+        );
+        $item_list->insert($item, 1);
+
+        $packed_box = Helper::getPackedBox($delivery_point, $item_list);
+
+        if ($packed_box->getItems()->count() !== $item_list->count()) {
+            $response->setError($this->language->get('hrx_m_warning_does_not_fit'));
+            return;
+        }
+
+        $this->setToCache('delivery_point', $delivery_point);
+
+        foreach ($new_parcel_size as $key => $value) {
+            $hrx_order->setCustomHrxData($key, $value);
+        }
+        /**
+         * Parcel size change detection end
+         */
+
+        try {
+            $hrx_order->save();
+        } catch (\Throwable $th) {
+            $response->setError('Exception: ' . $th->getMessage());
+        }
+
+        $response->addData('hrx_order', $hrx_order);
+        $response->addData('html', $this->getOrderPanelPartial($order_id, $hrx_order));
+    }
+
+    private function ajaxGetHrxTrackingInfo(AjaxResponse $response)
+    {
+        $order_id = isset($this->request->post['order_id']) ? $this->request->post['order_id'] : null;
+
+        if (!$order_id) {
+            $response->setError('Order ID required');
+            return;
+        }
+
+        $token = $this->config->get(Params::CONFIG_TOKEN);
+        $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
+
+        $id_language = (int) $this->config->get('config_language_id');
+
+        $order = Order::getManifestOrder($this->db, $order_id, $id_language);
+
+        $token = $this->config->get(Params::CONFIG_TOKEN);
+        $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
+
+        try {
+            $api = new HrxApi($token, $test_mode);
+            $tracking_events = $api->getTrackingEvents($order->getHrxOrderId());
+            $tracking_events = array_reverse($tracking_events);
+            // $response->addData('getTrackingInformation', $api->getTrackingInformation($order->getHrxTrackingNumber()));
+            $response->addData('getTrackingEvents', $tracking_events);
+
+            $response->addData(
+                'html',
+                $this->load->view(
+                    'extension/shipping/hrx_m/partial/order_panel_tracking_partial',
+                    [
+                        'track_events' => $tracking_events,
+                        'is_placeholder' => false
+                    ]
+                )
+            );
+        } catch (\Throwable $th) {
+            $response->setError($th->getMessage());
+        }
+    }
+
+    private function setToCache($key, $data)
+    {
+        $this->_cache[$key] = $data;
+    }
+
+    private function getFromCache($key)
+    {
+        return isset($this->_cache[$key]) ? $this->_cache[$key] : null;
+    }
 }

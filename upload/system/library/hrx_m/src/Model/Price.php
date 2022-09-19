@@ -22,7 +22,9 @@ class Price implements JsonSerializable
         'country_code' => 'string', // also a table field
         'country_name' => 'string',
         'price' => 'string',
-        'price_range_type' => 'int'
+        'price_range_type' => 'int',
+        'price_courier' => 'string',
+        'price_courier_range_type' => 'int'
     ];
 
     private $country_code;
@@ -47,8 +49,9 @@ class Price implements JsonSerializable
 
         $this->country_code = isset($data['country_code']) ? $data['country_code'] : null;
 
-        if (!$from_db && isset($data['price'])) {
-            $data['price'] = self::cleanPriceRangeData($data['price']);
+        if (!$from_db) {
+            $data['price'] = isset($data['price']) ? self::cleanPriceRangeData($data['price']) : '';
+            $data['price_courier'] = isset($data['price_courier']) ? self::cleanPriceRangeData($data['price_courier']) : '';
             if (!isset($data['country_name']) || empty($data['country_name'])) {
                 $data['country_name'] = $this->getCountryName($this->country_code);
             }
@@ -58,6 +61,14 @@ class Price implements JsonSerializable
 
         // if from database need to decode price_data field
         $this->data = json_decode($data['price_data'], true);
+
+        // backwards compatibility from before there was no courier options
+        if (!isset($this->data['price_courier'])) {
+            $this->data['price_courier'] = ''; // default empty value disables option
+        }
+        if (!isset($this->data['price_courier_range_type'])) {
+            $this->data['price_courier_range_type'] = self::RANGE_TYPE_CART_PRICE; // default to cart subtotal
+        }
 
         return $this;
     }
@@ -115,14 +126,26 @@ class Price implements JsonSerializable
         return isset($this->data['country_name']) ? $this->data['country_name'] : null;
     }
 
+    // Terminal Price
     public function getPriceValue()
     {
         return isset($this->data['price']) ? $this->data['price'] : null;
     }
-
+    // Terminal Price Range
     public function getRangeTypeValue()
     {
         return (int) (isset($this->data['price_range_type']) ? $this->data['price_range_type'] : self::RANGE_TYPE_CART_PRICE);
+    }
+
+    // Courier Price
+    public function getCourierPriceValue()
+    {
+        return isset($this->data['price_courier']) ? $this->data['price_courier'] : null;
+    }
+    // Courier Price Range
+    public function getCourierRangeTypeValue()
+    {
+        return (int) (isset($this->data['price_courier_range_type']) ? $this->data['price_courier_range_type'] : self::RANGE_TYPE_CART_PRICE);
     }
 
     public function getBase64String()
@@ -149,11 +172,30 @@ class Price implements JsonSerializable
      */
     public static function getPriceCountries($db)
     {
+
+        $courier_country_list = DeliveryCourier::getCountryList($db);
+        $terminal_country_list = DeliveryPoint::getCountryList($db);
+
+        $courier_country_list = array_map(function($item) {
+            return $item['iso_code_2'];
+        }, $courier_country_list);
+        
+        $terminal_country_list = array_map(function($item) {
+            return $item['iso_code_2'];
+        }, $terminal_country_list);
+
+        $country_list = array_merge($courier_country_list, $terminal_country_list);
+
+        // $sql = "
+        //     SELECT DISTINCT hmdp.`country` as `iso_code_2`, c.`name` FROM `" . DbTables::TABLE_DELIVERY_POINT . "` hmdp 
+        //     LEFT JOIN `" . DbTables::TABLE_PRICE . "` hmp ON hmp.`country_code` = hmdp.`country`
+        //     LEFT JOIN `" . DB_PREFIX . "country` c ON c.`iso_code_2` = hmdp.`country`
+        //     WHERE hmdp.`active` IN (1) AND c.`name` IS NOT NULL AND hmp.`country_code` IS NULL
+        // ";
         $sql = "
-            SELECT DISTINCT hmdp.`country` as `iso_code_2`, c.`name` FROM `" . DbTables::TABLE_DELIVERY_POINT . "` hmdp 
-            LEFT JOIN `" . DbTables::TABLE_PRICE . "` hmp ON hmp.`country_code` = hmdp.`country`
-            LEFT JOIN `" . DB_PREFIX . "country` c ON c.`iso_code_2` = hmdp.`country`
-            WHERE hmdp.`active` IN (1) AND c.`name` IS NOT NULL AND hmp.`country_code` IS NULL
+            SELECT c.`iso_code_2` as `iso_code_2`, c.`name` FROM `" . DB_PREFIX . "country` c 
+            LEFT JOIN `" . DbTables::TABLE_PRICE . "` hmp ON hmp.`country_code` = c.`iso_code_2`
+            WHERE c.`iso_code_2` IN ('" . implode("', '", $country_list) . "') AND hmp.`country_code` IS NULL
         ";
 
         $result = $db->query($sql);

@@ -8,12 +8,51 @@ use Mijora\HrxOpencart\Params;
 
 class Order implements JsonSerializable
 {
+    const REFRESH_ORDER_DATA_MAX_PER_PAGE = 10;
+
+    const ORDER_TYPE_COURIER = 'courier'; // getShippingCode will return this in case of courier otherwise terminal ID
+
+    // delivery kinds for API
+    const TYPE_DELIVERY_COURIER = 'courier';
+    const TYPE_DELIVERY_TERMINAL = 'delivery_location';
+
+    const HRX_STATUS_NEW = 'new';
+    const HRX_STATUS_READY = 'ready';
+    const HRX_STATUS_IN_DELIVERY = 'in_delivery';
+    const HRX_STATUS_IN_RETURN = 'in_return';
+    const HRX_STATUS_RETURNED = 'returned';
+    const HRX_STATUS_DELIVERED = 'delivered';
+    const HRX_STATUS_CANCELED = 'cancelled';
+    const HRX_STATUS_ERROR = 'error';
+
+    const VALID_FOR_CANCEL = [
+        self::HRX_STATUS_NEW,
+        self::HRX_STATUS_READY,
+        self::HRX_STATUS_ERROR
+    ];
+
+    const VALID_FOR_UPDATE_STATE = [
+        self::HRX_STATUS_NEW,
+        self::HRX_STATUS_READY
+    ];
+
+    const VALID_FOR_REREGISTER = [
+        self::HRX_STATUS_CANCELED
+    ];
+
+    const NO_DATA_REFRESH = [
+        self::HRX_STATUS_RETURNED,
+        self::HRX_STATUS_DELIVERED,
+        self::HRX_STATUS_CANCELED
+    ];
+
     const SQL_DATA_FIELDS = [
         'order_id' => 'int',
         'customer' => 'string',
         'order_status' => 'string',
         'order_status_id' => 'int',
         'shipping_code' => 'string',
+        'country_code_iso' => 'string',
         'total' => 'float',
         'currency_code' => 'string',
         'currency_value' => 'float',
@@ -21,8 +60,10 @@ class Order implements JsonSerializable
         'date_modified' => 'string',
         // custom
         'hrx_order_id' => 'string',
-        'hrx_order' => 'json',
-        'hrx_data' => 'json',
+        'hrx_order' => 'json', // HRX order json object from API
+        'hrx_data' => 'json', // local modifications to order as json object
+        'hrx_status' => 'string',
+        'hrx_tracking_number' => 'string'
     ];
 
     const IS_CLASS_VARIABLE = [
@@ -34,6 +75,8 @@ class Order implements JsonSerializable
 
     private $order_id;
 
+    public $oc_order; // opencart order data loaded using oc sale/order model
+
     private $data = [];
 
     private $hrx_order_id;
@@ -41,6 +84,9 @@ class Order implements JsonSerializable
     private $hrx_data;
 
     private $db;
+
+    // cached associations
+    private $_delivery_point;
 
     public function __construct($db, $data = null, $from_db = false)
     {
@@ -55,10 +101,6 @@ class Order implements JsonSerializable
         foreach (self::SQL_DATA_FIELDS as $field => $cast_type) {
             if (!isset($data[$field])) {
                 continue;
-            }
-
-            if ($cast_type === 'json') {
-                $this->$field = json_decode($data[$field], true);
             }
 
             $data_value = $data[$field];
@@ -78,6 +120,13 @@ class Order implements JsonSerializable
         }
     }
 
+    public function preloadOcOrder($oc_order_model)
+    {
+        $this->oc_order = $oc_order_model->getOrder((int) $this->order_id);
+
+        return $this;
+    }
+
     public function jsonSerialize()
     {
         return [
@@ -87,6 +136,12 @@ class Order implements JsonSerializable
             'hrx_order' => $this->hrx_order,
             'hrx_data' => $this->hrx_data
         ];
+    }
+
+    public function setCustomHrxData($key, $value)
+    {
+        $this->hrx_data[$key] = $value;
+        return $this;
     }
 
     public function setHrxOrderData($hrx_order_data)
@@ -130,6 +185,46 @@ class Order implements JsonSerializable
         return str_ireplace(['hrx_m.terminal_', 'hrx_m.'], '', $this->data['shipping_code']);
     }
 
+    public function getCountryCode()
+    {
+        return isset($this->data['country_code_iso']) ? $this->data['country_code_iso'] : null;
+    }
+
+    public function getCustomWarehouseId()
+    {
+        return isset($this->hrx_data['warehouse_id']) ? $this->hrx_data['warehouse_id'] : null;
+    }
+
+    public function getRegisteredDimensions()
+    {
+        return [
+            'weight' => isset($this->hrx_order['weight_kg']) ? $this->hrx_order['weight_kg'] : null,
+            'width' => isset($this->hrx_order['width_cm']) ? $this->hrx_order['width_cm'] : null,
+            'length' => isset($this->hrx_order['length_cm']) ? $this->hrx_order['length_cm'] : null,
+            'height' => isset($this->hrx_order['height_cm']) ? $this->hrx_order['height_cm'] : null
+        ];
+    }
+
+    public function hasValidRegisteredDimensions()
+    {
+        return !$this->isCancelled() && isset($this->hrx_order['weight_kg']) && isset($this->hrx_order['width_cm']) && isset($this->hrx_order['length_cm']) && isset($this->hrx_order['height_cm']);
+    }
+
+    public function getCustomDimensions()
+    {
+        return [
+            'weight' => isset($this->hrx_data['weight']) ? $this->hrx_data['weight'] : null,
+            'width' => isset($this->hrx_data['width']) ? $this->hrx_data['width'] : null,
+            'length' => isset($this->hrx_data['length']) ? $this->hrx_data['length'] : null,
+            'height' => isset($this->hrx_data['height']) ? $this->hrx_data['height'] : null
+        ];
+    }
+
+    public function hasValidCustomDimensions()
+    {
+        return isset($this->hrx_data['weight']) && isset($this->hrx_data['width']) && isset($this->hrx_data['length']) && isset($this->hrx_data['height']);
+    }
+
     public function getHrxOrderId()
     {
         return $this->hrx_order_id;
@@ -145,9 +240,106 @@ class Order implements JsonSerializable
         return $this->hrx_data;
     }
 
+    public function getComment()
+    {
+        return isset($this->hrx_data['comment']) ? $this->hrx_data['comment'] : '';
+    }
+
     public function canPrintReturnLabel()
     {
         return isset($this->hrx_order['can_print_return_label']) ? (bool) $this->hrx_order['can_print_return_label'] : false;
+    }
+
+    public function getHrxOrderStatus()
+    {
+        return isset($this->hrx_order['status']) ? $this->hrx_order['status'] : null;
+    }
+
+    public function isReadyForPickup()
+    {
+        return $this->getHrxOrderStatus() === self::HRX_STATUS_READY;
+    }
+
+    public function isCancelled()
+    {
+        return $this->getHrxOrderStatus() === self::HRX_STATUS_CANCELED;
+    }
+
+    public function canBeCancelled()
+    {
+        return in_array($this->getHrxOrderStatus(), self::VALID_FOR_CANCEL);
+    }
+
+    public function canUpdateReadyState()
+    {
+        return in_array($this->getHrxOrderStatus(), self::VALID_FOR_UPDATE_STATE);
+    }
+
+    public function canRegisterAgain()
+    {
+        return in_array($this->getHrxOrderStatus(), self::VALID_FOR_REREGISTER);
+    }
+
+    public function isRefreshable()
+    {
+        return $this->getHrxOrderId() && !in_array($this->getHrxOrderStatus(), self::NO_DATA_REFRESH);
+    }
+
+    public function getHrxTrackingNumber()
+    {
+        return isset($this->hrx_order['tracking_number']) ? $this->hrx_order['tracking_number'] : null;
+    }
+
+    public function getHrxTrackingUrl()
+    {
+        return isset($this->hrx_order['tracking_url']) ? $this->hrx_order['tracking_url'] : null;
+    }
+
+    public function getDeliveryAddress()
+    {
+        $shipping_id = $this->getShippingCode(true);
+
+        if ($shipping_id === self::ORDER_TYPE_COURIER) {
+            return null;
+        }
+
+        return 'Terminal: ' . $this->loadDeliveryPoint($shipping_id)->getFormatedAddress();
+    }
+
+    public function getHrxDeliveryAddress()
+    {
+        $address = $this->getShippingCode(true) !== self::ORDER_TYPE_COURIER ? 'Terminal: ' : '';
+
+        if (isset($this->hrx_order['delivery_location_address'])) {
+            $address .= $this->hrx_order['delivery_location_address'];
+        }
+        if (isset($this->hrx_order['delivery_location_city'])) {
+            $address .= ', ' . $this->hrx_order['delivery_location_city'];
+        }
+        if (isset($this->hrx_order['delivery_location_zip'])) {
+            $address .= ', ' . $this->hrx_order['delivery_location_zip'];
+        }
+        if (isset($this->hrx_order['delivery_location_country'])) {
+            $address .= ', ' . $this->hrx_order['delivery_location_country'];
+        }
+
+        return $address;
+    }
+
+    private function loadDeliveryPoint($shipping_id): DeliveryPoint
+    {
+        if ($this->_delivery_point) {
+            return $this->_delivery_point;
+        }
+
+        $this->_delivery_point = DeliveryPoint::getDeliveryPointById($shipping_id, $this->db);
+
+        return $this->_delivery_point;
+    }
+
+    public function isMarkedForPickup()
+    {
+        return $this->getHrxOrderStatus() === self::HRX_STATUS_READY;
     }
 
     public function save()
@@ -156,14 +348,17 @@ class Order implements JsonSerializable
         $json_hrx_order = json_encode($this->hrx_order);
 
         return $this->db->query("
-            INSERT INTO `" . DbTables::TABLE_ORDER . "` (order_id, hrx_order_id, hrx_order, hrx_data) 
+            INSERT INTO `" . DbTables::TABLE_ORDER . "` (order_id, hrx_order_id, hrx_order, hrx_data, hrx_status, hrx_tracking_number) 
             VALUES(
                 '" . (int) $this->order_id . "',
                 '" . $this->db->escape($this->hrx_order_id) . "',
                 '" . $this->db->escape($json_hrx_order) . "',
-                '" . $this->db->escape($json_hrx_data) . "'
+                '" . $this->db->escape($json_hrx_data) . "',
+                '" . $this->db->escape($this->getHrxOrderStatus()) . "',
+                '" . $this->db->escape($this->getHrxTrackingNumber()) . "'
             ) 
-            ON DUPLICATE KEY UPDATE hrx_order_id = VALUES(hrx_order_id), hrx_order = VALUES(hrx_order), hrx_data = VALUES(hrx_data)
+            ON DUPLICATE KEY UPDATE hrx_order_id = VALUES(hrx_order_id), hrx_order = VALUES(hrx_order), hrx_data = VALUES(hrx_data),
+                hrx_status = VALUES(hrx_status), hrx_tracking_number = VALUES(hrx_tracking_number)
         ");
     }
 
@@ -175,6 +370,7 @@ class Order implements JsonSerializable
             'filter_order_id' => (int) $order_id,
             'filter_customer' => null,
             'filter_hrx_id' => null,
+            'filter_hrx_tracking_num' => null,
             'filter_order_status_id' => null,
             'filter_is_registered' => null,
             'filter_has_manifest' => null,
@@ -191,9 +387,9 @@ class Order implements JsonSerializable
         return new Order($db, $result->row, true);
     }
 
-    public static function getManifestOrders($db, $filter, $id_language)
+    public static function getManifestOrders($db, $filter, $id_language, $paginate = true)
     {
-        $sql = self::buildManifestQuery($db, $filter, $id_language);
+        $sql = self::buildManifestQuery($db, $filter, $id_language, false, $paginate);
 
         $result = $db->query($sql);
 
@@ -218,7 +414,7 @@ class Order implements JsonSerializable
         return isset($result->row['total_orders']) ? (int) $result->row['total_orders'] : 0;
     }
 
-    public static function buildManifestQuery($db, $filter, $id_language, $count_only = false)
+    public static function buildManifestQuery($db, $filter, $id_language, $count_only = false, $paginate = true)
     {
         $sql = "
             SELECT o.order_id, CONCAT(o.firstname, ' ', o.lastname) AS customer, 
@@ -227,7 +423,11 @@ class Order implements JsonSerializable
                 WHERE os.order_status_id = o.order_status_id AND os.language_id = '" . (int) $id_language . "'
             ) AS order_status, o.order_status_id, o.shipping_code, o.total, o.currency_code, o.currency_value,
             o.date_added, o.date_modified,
-            hrx_order.hrx_order_id, hrx_order.hrx_order, hrx_order.hrx_data
+            (
+                SELECT c.iso_code_2 FROM " . DB_PREFIX . "country c 
+                WHERE c.country_id = o.shipping_country_id
+            ) AS country_code_iso,
+            hrx_order.hrx_order_id, hrx_order.hrx_order, hrx_order.hrx_data, hrx_order.hrx_status, hrx_order.hrx_tracking_number
         ";
 
         /*
@@ -262,7 +462,15 @@ class Order implements JsonSerializable
             ";
         }
 
-        if ((int) $filter['filter_order_id'] > 0) {
+        $select_multiple_orders = false;
+        if (isset($filter['filter_order_ids']) && is_array($filter['filter_order_ids'])) {
+            $sql .= "
+                AND o.order_id IN ('" . implode("', '", $filter['filter_order_ids']) . "')
+            ";
+            $select_multiple_orders = true;
+        }
+
+        if ((int) $filter['filter_order_id'] > 0 && !$select_multiple_orders) {
             $sql .= "
                 AND o.order_id = '" . $db->escape((int) $filter['filter_order_id']) . "'
             ";
@@ -277,6 +485,12 @@ class Order implements JsonSerializable
         if (!empty($filter['filter_hrx_id'])) {
             $sql .= "
                 AND hrx_order.hrx_order_id LIKE '%" . $db->escape((int) $filter['filter_hrx_id']) . "%'
+            ";
+        }
+
+        if (!empty($filter['filter_hrx_tracking_num'])) {
+            $sql .= "
+                AND hrx_order.hrx_tracking_number LIKE '%" . $db->escape($filter['filter_hrx_tracking_num']) . "%'
             ";
         }
 
@@ -295,7 +509,7 @@ class Order implements JsonSerializable
             }
         }
 
-        if (!$count_only) {
+        if (!$count_only && $paginate) {
             $page = $filter['page'];
             $limit = $filter['limit'];
 
@@ -307,5 +521,51 @@ class Order implements JsonSerializable
         }
 
         return $sql;
+    }
+
+    public static function getProductsDataByOrder($order_id, $db)
+    {
+        $product_ids_sql = $db->query(
+            '
+            SELECT product_id, quantity FROM ' . DB_PREFIX . 'order_product 
+            WHERE order_id = ' . (int) $order_id
+        );
+
+        if (!$product_ids_sql->rows) {
+            return [];
+        }
+
+        // product info from order
+        $products = [];
+        foreach ($product_ids_sql->rows as $row) {
+            $product_id = (int) $row['product_id'];
+            $products[$product_id] = [
+                'product_id' => $product_id,
+                'quantity' => $row['quantity']
+            ];
+        }
+
+        $product_ids = array_keys($products);
+
+        // add in product dimmensions information
+        $product_table_cols = ['product_id', 'shipping', 'width', 'height', 'length', 'weight', 'weight_class_id', 'length_class_id'];
+        $products_sql = $db->query('
+            SELECT ' . implode(', ', $product_table_cols) . ' FROM ' . DB_PREFIX . 'product 
+            WHERE product_id IN (' . implode(', ', $product_ids) . ')
+        ');
+
+        foreach ($products_sql->rows as $row) {
+            $product_id = (int) $row['product_id'];
+
+            if (!isset($products[$product_id])) {
+                continue;
+            }
+
+            foreach ($product_table_cols as $col) {
+                $products[$product_id][$col] = $row[$col];
+            }
+        }
+
+        return $products;
     }
 }

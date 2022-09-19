@@ -3,10 +3,11 @@
 namespace Mijora\HrxOpencart\Model;
 
 use JsonSerializable;
+use Mijora\HrxOpencart\Interfaces\DeliveryPointInterface;
 use Mijora\HrxOpencart\OpenCart\DbTables;
 use Mijora\HrxOpencart\Params;
 
-class DeliveryPoint implements JsonSerializable
+class DeliveryPoint implements JsonSerializable, DeliveryPointInterface
 {
     const FIELD_PARAMS = 'params';
     const FIELD_ACTIVE = 'active';
@@ -91,33 +92,22 @@ class DeliveryPoint implements JsonSerializable
             $this->active = true;
         }
 
-        // foreach ($this->api_fields as $api_field => $class_field) {
-        //     if (!isset($data_array[$api_field])) {
-        //         continue;
-        //     }
-
-        //     $this->{$class_field} = $data_array[$api_field];
-        // }
-
         return $this;
     }
 
     public function getStringAsMySqlValues($db)
     {
-        // return "(
-        //     '" . $db->escape($this->id) . "', '" . $db->escape($this->country) . "', '" . $db->escape($this->city) . "',
-        //     '" . $db->escape($this->zip) . "', '" . $db->escape($this->address) . "', '" . (float) $this->max_length_cm . "',
-        //     '" . (float) $this->max_width_cm . "', '" . (float) $this->max_height_cm . "', '" . (float) $this->max_weight_kg . "',
-        //     '" . (float) $this->min_length_cm . "', '" . (float) $this->min_width_cm . "', '" . (float) $this->min_height_cm . "',
-        //     '" . (float) $this->min_weight_kg . "', '" . $db->escape($this->recipient_phone_prefix) . "', '" . $db->escape($this->recipient_phone_regexp) . "',
-        //     '" . $this->latitude . "', '" . $this->longitude . "'
-        // )";
         return "(
             '" . $db->escape($this->id) . "', '" . $db->escape($this->country) . "', '" . $db->escape($this->city) . "',
             '" . $db->escape($this->zip) . "', '" . $db->escape($this->address) . "',
             '" . $this->latitude . "', '" . $this->longitude . "',
             '" . $db->escape(json_encode($this->params)) . "', '" . (int) $this->active . "'
         )";
+    }
+
+    public function getId()
+    {
+        return $this->id;
     }
 
     public function getParams()
@@ -132,9 +122,9 @@ class DeliveryPoint implements JsonSerializable
         $height = (float) (isset($this->params['min_height_cm']) ? $this->params['min_height_cm'] : 0);
 
         return $formated ? "$length x $width x $height" : [
-            'L' => $length,
-            'W' => $width,
-            'H' => $height
+            ParcelProduct::DIMENSION_LENGTH => $length,
+            ParcelProduct::DIMENSION_WIDTH => $width,
+            ParcelProduct::DIMENSION_HEIGHT => $height
         ];
     }
 
@@ -145,36 +135,41 @@ class DeliveryPoint implements JsonSerializable
         $height = (float) (isset($this->params['max_height_cm']) ? $this->params['max_height_cm'] : 0);
 
         return $formated ? "$length x $width x $height" : [
-            'L' => $length,
-            'W' => $width,
-            'H' => $height
+            ParcelProduct::DIMENSION_LENGTH => $length,
+            ParcelProduct::DIMENSION_WIDTH => $width,
+            ParcelProduct::DIMENSION_HEIGHT => $height
         ];
     }
 
-    public function getMinWeight()
+    public function getMinWeight(): float
     {
         return (float) (isset($this->params['min_weight_kg']) ? $this->params['min_weight_kg'] : 0);
     }
 
-    public function getMaxWeight()
+    public function getMaxWeight(): float
     {
         return (float) (isset($this->params['max_weight_kg']) ? $this->params['max_weight_kg'] : 0);
     }
 
-    public function getRecipientPhoneRegexp()
+    public function getRecipientPhoneRegexp(): string
     {
         return (string) (isset($this->params['recipient_phone_regexp']) ? $this->params['recipient_phone_regexp'] : '');
     }
 
-    public function getRecipientPhonePrefix()
+    public function getRecipientPhonePrefix(): string
     {
         return (string) (isset($this->params['recipient_phone_prefix']) ? $this->params['recipient_phone_prefix'] : '');
+    }
+
+    public function getFormatedAddress()
+    {
+        return $this->address . ', ' . $this->zip . ', ' . $this->city . ' ' . $this->country;
     }
 
     public function jsonSerialize()
     {
         return [
-            "id" => $this->id,
+            "id" => $this->getId(),
             "country" => $this->country,
             "city" => $this->city,
             "zip" => $this->zip,
@@ -233,6 +228,22 @@ class DeliveryPoint implements JsonSerializable
         ';
 
         $db->query($sql);
+    }
+
+    public static function getCountryList($db, $active_only = true)
+    {
+        $where = '';
+        if ($active_only) {
+            $where = ' AND hmdp.active = 1';
+        }
+        $sql = "
+            SELECT DISTINCT hmdp.`country` as `iso_code_2` FROM `" . DbTables::TABLE_DELIVERY_POINT . "` hmdp 
+            WHERE hmdp.`country` IS NOT NULL " . $where
+        ;
+
+        $result = $db->query($sql);
+
+        return !$result->rows ? [] : $result->rows;
     }
 
     public static function getPage($page, $limit, $db)
@@ -314,91 +325,4 @@ class DeliveryPoint implements JsonSerializable
 
         return $result;
     }
-
-    // public static function getDefaultWarehouse($db)
-    // {
-    //     $warehouse = new Warehouse();
-
-    //     $sql_result = $db->query('
-    //         SELECT `id`, `name`, `country`, `city`, `zip`, `address`, `is_test`, `is_default`
-    //         FROM ' . DbTables::TABLE_WAREHOUSE . '
-    //         WHERE `is_default` = "1"
-    //         LIMIT 1
-    //     ');
-
-    //     if (empty($sql_result->row)) {
-    //         return $warehouse;
-    //     }
-
-    //     return $warehouse->parseDataArray($sql_result->row);
-    // }
-
-    // public static function getWarehouse($id, $db)
-    // {
-    //     $warehouse = new Warehouse();
-    //     $sql_result = $db->query('
-    //         SELECT `id`, `name`, `country`, `city`, `zip`, `address`, `is_test`, `is_default`
-    //         FROM ' . DbTables::TABLE_WAREHOUSE . '
-    //         WHERE `id` = "' . $db->escape($id) . '"
-    //         LIMIT 1
-    //     ');
-
-    //     if (empty($sql_result->row)) {
-    //         return $warehouse;
-    //     }
-
-    //     return $warehouse->parseDataArray($sql_result->row);
-    // }
-
-    // public static function setDefaultWarehouse($id, $db)
-    // {
-    //     $warehouse = self::getWarehouse($id, $db);
-
-    //     // make sure warehouse exist
-    //     if (!$warehouse->id) {
-    //         return $warehouse;
-    //     }
-
-    //     // remove current defaults
-    //     $db->query('
-    //         UPDATE `' . DbTables::TABLE_WAREHOUSE . '`
-    //         SET 
-    //             `is_default` = "0"
-    //         WHERE `is_default` = "1"
-    //     ');
-
-    //     // set new default
-    //     $db->query('
-    //         UPDATE `' . DbTables::TABLE_WAREHOUSE . '`
-    //         SET 
-    //             `is_default` = "1"
-    //         WHERE `id` = "' . $db->escape($id) . '"
-    //     ');
-
-    //     $warehouse->is_default = true;
-
-    //     return $warehouse;
-    // }
 }
-
-/* API Warehouse object
- {
-    "id": "81f32a75-4cf9-4bcf-8536-7eb2836f4d23",
-    "country": "LV",
-    "city": "Rīga",
-    "zip": "LV-1050",
-    "address": "Stacijas laukums 2",
-    "max_length_cm": 63.99,
-    "max_width_cm": 37.99,
-    "max_height_cm": 31.99,
-    "max_weight_kg": 19.9999,
-    "min_length_cm": 13.99,
-    "min_width_cm": 7.99,
-    "min_height_cm": 4.99,
-    "min_weight_kg": 0.4999,
-    "recipient_phone_prefix": "+371",
-    "recipient_phone_regexp": "^2[0-9]{7}$",
-    "latitude": 56.94697,
-    "longitude": 24.118524
-  }
- */

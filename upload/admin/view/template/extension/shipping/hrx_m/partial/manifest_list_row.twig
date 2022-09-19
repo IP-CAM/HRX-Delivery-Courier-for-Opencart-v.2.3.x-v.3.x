@@ -1,23 +1,86 @@
 <tr data-row-order-id="{{ order.getOrderId() }}">
-    <td class="text-center">
-        <input type="checkbox" name="selected[]" value="{{ order.getOrderId() }}">
-        <input type="hidden" name="shipping_code[]" value="{{ order.getShippingCode(true) }}">
-    </td>
-    <td class="text-right">{{ order.getOrderId() }}</td>
-    <td class="text-left"><a target="_blank" href="{{ order_url }}&order_id={{ order.getOrderId() }}">{{ order.getCustomer() }}</a></td>
-    <td class="text-left">{{ order.getOrderStatus() }}</td>
-    <td class="text-right">{{ order.getHrxOrderId() }}</td>
-    {# <td class="text-left">{{ order.manifest_id > 0 ? order.manifest_id : '' }}</td> #}
-    <td>
-        <div class="hrx_m-actions-col">
-            {% if not order.getHrxOrderId() %}
-                <button data-register-order data-oc-order-id="{{ order.getOrderId() }}" class="btn btn-default">{{ hrx_m_btn_register_order }}</button>
-            {% else %}
-                {% if order.canPrintReturnLabel() %}
-                    <button data-print-label-return data-label-type="return" data-oc-order-id="{{ order.getOrderId() }}" class="btn btn-default">{{ hrx_m_btn_print_label_return }}</button>
-                {% endif %}
-                <button data-print-label data-label-type="shipment" data-oc-order-id="{{ order.getOrderId() }}" class="btn btn-default">{{ hrx_m_btn_print_label}}</button>
-            {% endif %}
-        </div>
-    </td>
+	<td class="text-center">
+		<input type="checkbox" name="selected[]" value="{{ order.getOrderId() }}">
+		<input type="hidden" name="shipping_code[]" value="{{ order.getShippingCode(true) }}">
+	</td>
+	<td class="text-right">{{ order.getOrderId() }}</td>
+	<td class="text-left">
+		<a target="_blank" href="{{ order_url }}&order_id={{ order.getOrderId() }}">{{ order.getCustomer() }}</a>
+	</td>
+	<td class="text-left">{{ order.getOrderStatus() }}</td>
+	<td class="text-left hrx-order-data">
+		{% if order.getHrxOrderId() and not order.isCancelled() %}
+			<p>
+				<span>{{ hrx_m_hrx_data_id }}</span>
+				{{ order.getHrxOrderId() }}
+			</p>
+
+			<p>
+				<span>{{ hrx_m_hrx_data_status }}</span>
+				{{ order.getHrxOrderStatus() }}
+			</p>
+
+			<p>
+				<span>{{ hrx_m_hrx_data_deliver }}</span>
+				{{ order.getHrxDeliveryAddress() }}
+			</p>
+
+			{% if order.getHrxTrackingNumber() %}
+				<p>
+					<span>{{ hrx_m_hrx_data_tracking }}</span>
+					<a target="_blank" href="{{ order.getHrxTrackingUrl() }}">{{ order.getHrxTrackingNumber() }}</a>
+				</p>
+			{% endif %}
+		{% endif %}
+	</td>
+	<td>
+		<div class="hrx_m-actions-col">
+			{% if not order.getHrxOrderId() or order.isCancelled() %}
+				<button data-register-order data-oc-order-id="{{ order.getOrderId() }}" class="btn btn-default">{{ hrx_m_btn_register_order }}</button>
+			{% else %}
+				<div class="btn-group">
+					<button type="button" class="btn btn-default dropdown-toggle" data-toggle="dropdown" data-boundary="window" aria-haspopup="true" aria-expanded="false">{{ hrx_m_btn_manifest_action }}
+						<span class="caret"></span>
+					</button>
+					<ul class="dropdown-menu dropdown-menu-right">
+						<li>
+							<a href="#" data-refresh-order="{{ order.getHrxOrderId() }}" data-oc-order-id="{{ order.getOrderId() }}">{{ hrx_m_btn_refresh_order }}</a>
+						</li>
+
+						<li role="separator" class="divider"></li>
+
+						<li>
+							<a href="#" data-print-label data-label-type="shipment" data-oc-order-id="{{ order.getOrderId() }}">{{ hrx_m_btn_print_label }}</a>
+						</li>
+						{% if order.canPrintReturnLabel() %}
+							<li>
+								<a href="#" data-print-label-return data-label-type="return" data-oc-order-id="{{ order.getOrderId() }}">{{ hrx_m_btn_print_label_return }}</a>
+							</li>
+						{% endif %}
+
+						<li role="separator" class="divider"></li>
+
+						{% if order.canUpdateReadyState() and not order.isMarkedForPickup() %}
+							<li>
+								<a href="#" data-order-state-btn data-change-order-state="1" data-oc-order-id="{{ order.getOrderId() }}">{{ hrx_m_btn_ready_for_pickup }}</a>
+							</li>
+						{% endif %}
+						{% if order.canUpdateReadyState() and order.isMarkedForPickup() %}
+							<li>
+								<a href="#" data-order-state-btn data-change-order-state="0" data-oc-order-id="{{ order.getOrderId() }}">{{ hrx_m_btn_cancel_pickup }}</a>
+							</li>
+						{% endif %}
+
+						<li role="separator" class="divider"></li>
+
+						{% if order.canBeCancelled() %}
+							<li>
+								<a href="#" data-cancel-order data-oc-order-id="{{ order.getOrderId() }}">{{ hrx_m_btn_cancel_order }}</a>
+							</li>
+						{% endif %}
+					</ul>
+				</div>
+			{% endif %}
+		</div>
+	</td>
 </tr>

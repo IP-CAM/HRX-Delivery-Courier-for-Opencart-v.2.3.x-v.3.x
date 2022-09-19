@@ -3,6 +3,8 @@
     <td>{{ price.getCountryNameValue() }}</td>
     <td>{{ price.getPriceValue() }}</td>
     <td>{{ price_range_types[price.getRangeTypeValue()] }}</td>
+    <td>{{ price.getCourierPriceValue() }}</td>
+    <td>{{ price_range_types[price.getCourierRangeTypeValue()] }}</td>
     <td>
         <div class="hrx_m-actions-col">
             <button data-price-edit="{{ price_country_code }}" class="btn btn-primary"><i class="fa fa-edit"></i></button>

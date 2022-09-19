@@ -147,6 +147,7 @@ console.log('valid selection', hasSelection ? true : false);
             terminalList: terminals,
             parseLocationName: this.nameParser,
             parseLocationComment: this.commentParser,
+            customTileServerUrl: 'http://185.140.230.40:8080/tile/{z}/{x}/{y}.png',
             parseMapTooltip: (location, leafletCoords) => {
                 return this.commentParser(location);
             }

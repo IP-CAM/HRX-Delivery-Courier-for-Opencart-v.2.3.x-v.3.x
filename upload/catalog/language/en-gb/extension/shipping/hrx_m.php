@@ -1,7 +1,8 @@
 <?php
 // Text
 $_['text_title'] = 'HRX Delivery';
-$_['text_prefix'] = 'HRX Delivery: ';
+$_['hrx_m_quote_terminal_title_prefix'] = 'HRX Delivery: ';
+$_['hrx_m_quote_title_courier'] = 'HRX Delivery: Courier';
 
 
 // JS Strings

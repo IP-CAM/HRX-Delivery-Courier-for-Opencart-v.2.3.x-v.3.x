@@ -10,6 +10,7 @@ class ComposerStaticInit5efb734d60d69db2f68d7755f53869e3
         'M' => 
         array (
             'Mijora\\HrxOpencart\\' => 19,
+            'Mijora\\DVDoug\\BoxPacker\\' => 24,
         ),
         'H' => 
         array (
@@ -22,6 +23,10 @@ class ComposerStaticInit5efb734d60d69db2f68d7755f53869e3
         array (
             0 => __DIR__ . '/../..' . '/src',
         ),
+        'Mijora\\DVDoug\\BoxPacker\\' => 
+        array (
+            0 => __DIR__ . '/../..' . '/box_packer',
+        ),
         'HrxApi\\' => 
         array (
             0 => __DIR__ . '/..' . '/hrx/api-lib/src',
@@ -30,6 +35,43 @@ class ComposerStaticInit5efb734d60d69db2f68d7755f53869e3
 
     public static $classMap = array (
         'Composer\\InstalledVersions' => __DIR__ . '/..' . '/composer/InstalledVersions.php',
+        'HrxApi\\API' => __DIR__ . '/..' . '/hrx/api-lib/src/API.php',
+        'HrxApi\\Helper' => __DIR__ . '/..' . '/hrx/api-lib/src/Helper.php',
+        'HrxApi\\Order' => __DIR__ . '/..' . '/hrx/api-lib/src/Order.php',
+        'HrxApi\\Receiver' => __DIR__ . '/..' . '/hrx/api-lib/src/Receiver.php',
+        'HrxApi\\Shipment' => __DIR__ . '/..' . '/hrx/api-lib/src/Shipment.php',
+        'Mijora\\DVDoug\\BoxPacker\\Box' => __DIR__ . '/../..' . '/box_packer/Box.php',
+        'Mijora\\DVDoug\\BoxPacker\\ConstrainedPlacementItem' => __DIR__ . '/../..' . '/box_packer/ConstrainedPlacementItem.php',
+        'Mijora\\DVDoug\\BoxPacker\\DefaultItemSorter' => __DIR__ . '/../..' . '/box_packer/DefaultItemSorter.php',
+        'Mijora\\DVDoug\\BoxPacker\\Item' => __DIR__ . '/../..' . '/box_packer/Item.php',
+        'Mijora\\DVDoug\\BoxPacker\\ItemList' => __DIR__ . '/../..' . '/box_packer/ItemList.php',
+        'Mijora\\DVDoug\\BoxPacker\\ItemSorter' => __DIR__ . '/../..' . '/box_packer/ItemSorter.php',
+        'Mijora\\DVDoug\\BoxPacker\\LayerPacker' => __DIR__ . '/../..' . '/box_packer/LayerPacker.php',
+        'Mijora\\DVDoug\\BoxPacker\\LayerStabiliser' => __DIR__ . '/../..' . '/box_packer/LayerStabiliser.php',
+        'Mijora\\DVDoug\\BoxPacker\\OrientatedItem' => __DIR__ . '/../..' . '/box_packer/OrientatedItem.php',
+        'Mijora\\DVDoug\\BoxPacker\\OrientatedItemFactory' => __DIR__ . '/../..' . '/box_packer/OrientatedItemFactory.php',
+        'Mijora\\DVDoug\\BoxPacker\\OrientatedItemSorter' => __DIR__ . '/../..' . '/box_packer/OrientatedItemSorter.php',
+        'Mijora\\DVDoug\\BoxPacker\\PackedBox' => __DIR__ . '/../..' . '/box_packer/PackedBox.php',
+        'Mijora\\DVDoug\\BoxPacker\\PackedItem' => __DIR__ . '/../..' . '/box_packer/PackedItem.php',
+        'Mijora\\DVDoug\\BoxPacker\\PackedItemList' => __DIR__ . '/../..' . '/box_packer/PackedItemList.php',
+        'Mijora\\DVDoug\\BoxPacker\\PackedLayer' => __DIR__ . '/../..' . '/box_packer/PackedLayer.php',
+        'Mijora\\DVDoug\\BoxPacker\\Rotation' => __DIR__ . '/../..' . '/box_packer/Rotation.php',
+        'Mijora\\DVDoug\\BoxPacker\\VolumePacker' => __DIR__ . '/../..' . '/box_packer/VolumePacker.php',
+        'Mijora\\DVDoug\\BoxPacker\\WorkingVolume' => __DIR__ . '/../..' . '/box_packer/WorkingVolume.php',
+        'Mijora\\HrxOpencart\\Helper' => __DIR__ . '/../..' . '/src/Helper.php',
+        'Mijora\\HrxOpencart\\Interfaces\\DeliveryPointInterface' => __DIR__ . '/../..' . '/src/Interfaces/DeliveryPointInterface.php',
+        'Mijora\\HrxOpencart\\Model\\AjaxResponse' => __DIR__ . '/../..' . '/src/Model/AjaxResponse.php',
+        'Mijora\\HrxOpencart\\Model\\DeliveryCourier' => __DIR__ . '/../..' . '/src/Model/DeliveryCourier.php',
+        'Mijora\\HrxOpencart\\Model\\DeliveryPoint' => __DIR__ . '/../..' . '/src/Model/DeliveryPoint.php',
+        'Mijora\\HrxOpencart\\Model\\Order' => __DIR__ . '/../..' . '/src/Model/Order.php',
+        'Mijora\\HrxOpencart\\Model\\ParcelBox' => __DIR__ . '/../..' . '/src/Model/ParcelBox.php',
+        'Mijora\\HrxOpencart\\Model\\ParcelDefault' => __DIR__ . '/../..' . '/src/Model/ParcelDefault.php',
+        'Mijora\\HrxOpencart\\Model\\ParcelItem' => __DIR__ . '/../..' . '/src/Model/ParcelItem.php',
+        'Mijora\\HrxOpencart\\Model\\ParcelProduct' => __DIR__ . '/../..' . '/src/Model/ParcelProduct.php',
+        'Mijora\\HrxOpencart\\Model\\Price' => __DIR__ . '/../..' . '/src/Model/Price.php',
+        'Mijora\\HrxOpencart\\Model\\Warehouse' => __DIR__ . '/../..' . '/src/Model/Warehouse.php',
+        'Mijora\\HrxOpencart\\OpenCart\\DbTables' => __DIR__ . '/../..' . '/src/OpenCart/DbTables.php',
+        'Mijora\\HrxOpencart\\Params' => __DIR__ . '/../..' . '/src/Params.php',
     );
 
     public static function getInitializer(ClassLoader $loader)

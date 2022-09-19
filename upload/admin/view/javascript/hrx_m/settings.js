@@ -17,12 +17,16 @@ var HRX_M = {
             HRX_M.syncWarehouseAction(1, HRX_M_SETTINGS_DATA.syncWarehousePerPage);
         });
 
-        MIJORA_COMMON.addGlobalListener('click', 'button[data-refresh-delivery-points]', function (e) {
+        MIJORA_COMMON.addGlobalListener('click', 'button[data-refresh-delivery-locations]', function (e) {
             e.preventDefault();
-            MIJORA_COMMON.showLoadingOverlay(true, document.querySelector('#tab-delivery'));
-            document.querySelector('[data-delivery-points-loaded]').textContent = 0;
-            document.querySelector('[data-delivery-points-loader]').classList.remove('hidden');
-            HRX_M.syncDeliveryPointsAction(1, HRX_M_SETTINGS_DATA.syncDeliveryPointsPerPage);
+
+            let actionFunctionName = `syncDelivery${e.target.dataset.refreshDeliveryLocations}Action`;
+
+            if (typeof HRX_M[actionFunctionName] !== 'function') {
+                return;
+            }
+
+            HRX_M[actionFunctionName](1);
         });
 
         MIJORA_COMMON.addGlobalListener('change', '[name="hrx_m_default_warehouse"]', this.defaultWarehouseAction, {}, document.querySelector('#tab-warehouse'));
@@ -34,6 +38,40 @@ var HRX_M = {
         MIJORA_COMMON.addGlobalListener('click', '[data-price-edit-cancel]', () => {
             HRX_M.closePriceEditModal();
         }, {}, document.querySelector('#tab-prices'));
+
+        MIJORA_COMMON.addGlobalListener('click', '[data-close-modal]', function (e) {
+            const modal = document.querySelector(e.target.dataset.closeModal);
+            if (modal) {
+                HRX_M.closeParcelDefaultEditModal(modal);
+            }
+        });
+
+        MIJORA_COMMON.addGlobalListener('click', '[data-save-modal]', function (e) {
+            const targetModal = e.target.dataset.saveModal;
+            const functionName = MIJORA_COMMON.toCamelCase(targetModal.replace('#', '')) + 'HandleSaveAction';
+            const modal = document.querySelector(targetModal);
+
+            if (modal && typeof HRX_M[functionName] === 'function') {
+                HRX_M[functionName](modal);
+            }
+
+        });
+
+        MIJORA_COMMON.addGlobalListener('click', '[data-parcel-default-edit]', function (e) {
+            const modal = document.querySelector(e.target.dataset.modal);
+            if (modal) {
+                HRX_M.openParcelDefaultEditModal(modal, e.target.dataset.parcelDefaultEdit);
+            }
+        });
+
+        MIJORA_COMMON.addGlobalListener('click', '[data-parcel-default-reset]', function (e) {
+            MIJORA_COMMON.confirm({
+                message: 'Confirm removing default dimensions?',
+                accept: () => {
+                    HRX_M.resetParcelDefaultAction(e.target.dataset.parcelDefaultReset);
+                }
+            });
+        });
 
         MIJORA_COMMON.showLoadingOverlay(false, tabContent);
     },
@@ -114,24 +152,43 @@ var HRX_M = {
         });
     },
 
-    syncDeliveryPointsAction: function (page, per_page) {
+    getDeliveryLocationsPage: function (page) {
         const data = new FormData();
         data.set('page', page);
-        data.set('per_page', per_page);
 
-        HRX_M.ajax('syncDeliveryPoints', HRX_M.syncDeliveryPointsHandleAction, null, {
+        HRX_M.ajax('getDeliveryLocationsPage', function (json) {
+            document.querySelector('#tab-delivery-courier').innerHTML = json.data.html;
+        }, document.querySelector('#tab-delivery-courier'), {
             method: 'POST',
             body: data
         });
     },
 
-    syncDeliveryPointsHandleAction: function (json) {
+    syncDeliveryTerminalAction: function (page, per_page) {
+
+        if (page === 1) {
+            MIJORA_COMMON.showLoadingOverlay(true, document.querySelector('#tab-delivery'));
+            document.querySelector('[data-delivery-points-loaded]').textContent = 0;
+            document.querySelector('[data-delivery-points-loader]').classList.remove('hidden');
+            per_page = HRX_M_SETTINGS_DATA.syncDeliveryPointsPerPage;
+        }
+
+        const data = new FormData();
+        data.set('page', page);
+        data.set('per_page', per_page);
+
+        HRX_M.ajax('syncDeliveryPoints', HRX_M.syncDeliveryTerminalHandleAction, null, {
+            method: 'POST',
+            body: data
+        });
+    },
+
+    syncDeliveryTerminalHandleAction: function (json) {
         console.log('Loaded: ' + json.data.page);
-        window.mijora_testas = json.data;
         if (json.data.hasMore) {
             console.log('Loading next page...');
             document.querySelector('[data-delivery-points-loaded]').textContent = json.data.page * HRX_M_SETTINGS_DATA.syncDeliveryPointsPerPage;
-            HRX_M.syncDeliveryPointsAction(json.data.page + 1, HRX_M_SETTINGS_DATA.syncDeliveryPointsPerPage);
+            HRX_M.syncDeliveryTerminalAction(json.data.page + 1, HRX_M_SETTINGS_DATA.syncDeliveryPointsPerPage);
             return;
         }
 
@@ -139,6 +196,23 @@ var HRX_M = {
         HRX_M.getDeliveryPointsPage(1);
         document.querySelector('[data-delivery-points-loader]').classList.add('hidden');
         MIJORA_COMMON.showLoadingOverlay(false, document.querySelector('#tab-delivery'));
+    },
+
+    syncDeliveryCourierAction: function (page, per_page) {
+        MIJORA_COMMON.showLoadingOverlay(true, document.querySelector('#tab-delivery-courier'));
+
+        HRX_M.ajax('syncCourierDeliveryLocations', HRX_M.syncDeliveryCourierHandleAction, null, {
+            method: 'POST'
+        });
+    },
+
+    syncDeliveryCourierHandleAction: function (json) {
+        console.log('Loaded: ' + json.data.locations_loaded);
+
+        console.log('Delivery Courier Locations Sync Done');
+        HRX_M.getDeliveryLocationsPage(1);
+
+        MIJORA_COMMON.showLoadingOverlay(false, document.querySelector('#tab-delivery-courier'));
     },
 
     defaultWarehouseAction: function (event) {
@@ -201,7 +275,9 @@ var HRX_M = {
             country_code: countrySelect.value,
             country_name: countrySelect.selectedOptions[0].textContent,
             price: priceTab.querySelector('#price-table [name="terminal_price"]').value,
-            price_range_type: priceTab.querySelector('#price-table [name="terminal_price_range_type"]').value
+            price_range_type: priceTab.querySelector('#price-table [name="terminal_price_range_type"]').value,
+            price_courier: priceTab.querySelector('#price-table [name="courier_price"]').value,
+            price_courier_range_type: priceTab.querySelector('#price-table [name="courier_price_range_type"]').value
         };
 
         console.log(data);
@@ -231,7 +307,7 @@ var HRX_M = {
                 return a.dataset.priceRow.localeCompare(b.dataset.priceRow);
             })
             .forEach(row => priceTable.append(row));
-        
+
         if (rows.length > 0) {
             document.querySelector('#tab-prices #created-prices #no-price-notification').classList.add('hidden');
         } else {
@@ -259,8 +335,8 @@ var HRX_M = {
         $('.edit-price-modal [name="country_name"]').val(priceData.data.country_name);
         $('.edit-price-modal [name="terminal_price"]').val(priceData.data.price);
         $('.edit-price-modal [name="terminal_price_range_type"]').val(priceData.data.price_range_type);
-        // $('.edit-price-modal [name="courier_price"]').val(priceData.courier_price);
-        // $('.edit-price-modal [name="courier_price_range_type"]').val(priceData.courier_price_range_type);
+        $('.edit-price-modal [name="courier_price"]').val(priceData.data.price_courier);
+        $('.edit-price-modal [name="courier_price_range_type"]').val(priceData.data.price_courier_range_type);
         document.querySelector('.edit-price-modal').classList.remove('hidden');
     },
 
@@ -269,8 +345,8 @@ var HRX_M = {
         $('.edit-price-modal [name="country_name"]').val('');
         $('.edit-price-modal [name="terminal_price"]').val('');
         $('.edit-price-modal [name="terminal_price_range_type"]').val(0);
-        // $('.edit-price-modal [name="courier_price"]').val(priceData.courier_price);
-        // $('.edit-price-modal [name="courier_price_range_type"]').val(priceData.courier_price_range_type);
+        $('.edit-price-modal [name="courier_price"]').val('');
+        $('.edit-price-modal [name="courier_price_range_type"]').val(0);
         document.querySelector('.edit-price-modal').classList.add('hidden');
     },
 
@@ -283,7 +359,9 @@ var HRX_M = {
             country_code: priceModal.querySelector('[name="country"]').value,
             country_name: priceModal.querySelector('[name="country_name"]').value,
             price: priceModal.querySelector('[name="terminal_price"]').value,
-            price_range_type: priceModal.querySelector('[name="terminal_price_range_type"]').value
+            price_range_type: priceModal.querySelector('[name="terminal_price_range_type"]').value,
+            price_courier: priceModal.querySelector('[name="courier_price"]').value,
+            price_courier_range_type: priceModal.querySelector('[name="courier_price_range_type"]').value
         };
 
         console.log('Editing price', data);
@@ -358,7 +436,7 @@ var HRX_M = {
     },
 
     savePriceAction: function (priceData, callback) {
-        if (!priceData.price || !HRX_M.isPriceRangeValid(priceData.price)) {
+        if (!HRX_M.isPriceRangeValid(priceData.price) || !HRX_M.isPriceRangeValid(priceData.price_courier)) {
             MIJORA_COMMON.alert({ message: 'Invalid price or price range entered!' });
             return;
         }
@@ -381,14 +459,150 @@ var HRX_M = {
         });
     },
 
-    ajax: function (action, callback, overlayOn, fetchInit) {
-        MIJORA_COMMON.showLoadingOverlay(true, overlayOn);
-        /*
-        {
+    getParcelDefaultPage: function (page) {
+        const data = new FormData();
+        data.set('page', page);
+
+        HRX_M.ajax('getParcelDefaultPage', function (json) {
+            document.querySelector('#tab-parcel-default [data-parcel-default-list]').innerHTML = json.data.html;
+        }, document.querySelector('#tab-parcel-default [data-parcel-default-list]'), {
             method: 'POST',
             body: data
+        });
+    },
+
+    openParcelDefaultEditModal: function (modal, targetCategoryId) {
+        let defaultValues = HRX_M_PARCEL_DEFAULT_GLOBAL;
+        let title = 'Global';
+
+        const row = document.querySelector(`#tab-parcel-default [data-row-category-id="${targetCategoryId}"]`);
+
+        if (row) {
+            title = row.querySelector('[data-category-name]').textContent;
         }
-        */
+
+        if (row && row.dataset.parcelDefault) {
+            defaultValues = HRX_M.decodeBase64Json(row.dataset.parcelDefault);
+        }
+
+        modal.querySelector('#parcel_default_modal_title').textContent = title;
+
+        modal.querySelector('[name="hrx_m_pd_category_id"]').value = targetCategoryId;
+        modal.querySelector('[name="hrx_m_pd_weight"]').value = defaultValues.weight;
+        modal.querySelector('[name="hrx_m_pd_length"]').value = defaultValues.length;
+        modal.querySelector('[name="hrx_m_pd_width"]').value = defaultValues.width;
+        modal.querySelector('[name="hrx_m_pd_height"]').value = defaultValues.height;
+
+        modal.classList.remove('hidden');
+        modal.scrollIntoView({ behavior: "smooth" });
+    },
+
+    closeParcelDefaultEditModal: function (modal) {
+        modal.querySelector('[name="hrx_m_pd_category_id"]').value = 0;
+        modal.querySelector('[name="hrx_m_pd_weight"]').value = '';
+        modal.querySelector('[name="hrx_m_pd_length"]').value = '';
+        modal.querySelector('[name="hrx_m_pd_width"]').value = '';
+        modal.querySelector('[name="hrx_m_pd_height"]').value = '';
+
+        modal.querySelectorAll('.has-error').forEach(el => {
+            el.classList.remove('has-error');
+        });
+        modal.classList.add('hidden');
+    },
+
+    parcelDefaultModalHandleSaveAction: function (modal) {
+        const inputNamePrefix = 'hrx_m_pd_';
+        const modalData = {
+            category_id: modal.querySelector(`[name="${inputNamePrefix}category_id"]`).value,
+            weight: modal.querySelector(`[name="${inputNamePrefix}weight"]`).value,
+            length: modal.querySelector(`[name="${inputNamePrefix}length"]`).value,
+            width: modal.querySelector(`[name="${inputNamePrefix}width"]`).value,
+            height: modal.querySelector(`[name="${inputNamePrefix}height"]`).value
+        };
+
+        const data = new FormData();
+        data.set('category_id', modalData.category_id);
+        data.set('weight', modalData.weight);
+        data.set('length', modalData.length);
+        data.set('width', modalData.width);
+        data.set('height', modalData.height);
+
+        HRX_M.ajax('saveParcelDefault', function (response) {
+            if (response.data.validated) {
+
+                // Check if it was global values update
+                if (response.data.save_result && response.data.parcel_default.category_id === 0) {
+                    HRX_M_PARCEL_DEFAULT_GLOBAL = response.data.parcel_default;
+                    if (response.data.html) {
+                        document.querySelector(`#tab-parcel-default [data-parcel-default-global]`).innerHTML = response.data.html;
+                    }
+                    HRX_M.closeParcelDefaultEditModal(modal);
+                    return;
+                }
+
+                if (response.data.html) {
+                    HRX_M.parcelDefaultUpdateRowHtml(response.data.html, modalData.category_id);
+                }
+
+                HRX_M.closeParcelDefaultEditModal(modal);
+
+                document.querySelector(`#tab-parcel-default [data-row-category-id="${modalData.category_id}"]`).scrollIntoView({ behavior: "smooth" });
+
+                return;
+            }
+
+            const fields = Object.keys(response.data.validation);
+            fields.forEach(field => {
+                if (response.data.validation[field]) {
+                    return;
+                }
+
+                const inputEl = modal.querySelector(`[name="${inputNamePrefix}${field}"]`);
+                if (inputEl) {
+                    inputEl.closest('.input-group').classList.add('has-error');
+                }
+            });
+
+        }, modal.querySelector('.panel'), {
+            method: 'POST',
+            body: data
+        });
+    },
+
+    resetParcelDefaultAction: function (categoryId) {
+        const data = new FormData();
+        data.set('category_id', categoryId);
+
+        HRX_M.ajax('resetParcelDefault', function (response) {
+            if (response.data.html) {
+                HRX_M.parcelDefaultUpdateRowHtml(response.data.html, categoryId);
+            }
+        }, document.querySelector('#tab-parcel-default [data-parcel-default-list]'), {
+            method: 'POST',
+            body: data
+        });
+    },
+
+    parcelDefaultUpdateRowHtml: function (html, categoryId) {
+        let tempBody = document.createElement('tbody');
+        tempBody.innerHTML = html;
+
+        const tbodyEl = document.querySelector('#tab-parcel-default [data-parcel-default-list] table > tbody');
+        const currentRow = tbodyEl.querySelector(`[data-row-category-id="${categoryId}"]`);
+        const currentRowSibling = currentRow.nextSibling;
+
+        if (currentRow) {
+            currentRow.remove();
+        }
+
+        // insert updated row
+        tbodyEl.insertBefore(tempBody.firstChild, currentRowSibling);
+        tempBody = null;
+    },
+
+    ajax: function (action, callback, overlayOn, fetchInit) {
+        MIJORA_COMMON.showLoadingOverlay(true, overlayOn);
+
         fetch(`${HRX_M_SETTINGS_DATA.url_ajax}&action=${action}`, fetchInit)
             .then(res => res.json())
             .then(json => {

@@ -3,6 +3,12 @@
 namespace Mijora\HrxOpencart;
 
 use HrxApi\API;
+use Mijora\DVDoug\BoxPacker\ItemList;
+use Mijora\DVDoug\BoxPacker\PackedBox;
+use Mijora\DVDoug\BoxPacker\VolumePacker;
+use Mijora\HrxOpencart\Interfaces\DeliveryPointInterface;
+use Mijora\HrxOpencart\Model\ParcelBox;
+use Mijora\HrxOpencart\Model\ParcelProduct;
 
 class Helper
 {
@@ -243,5 +249,35 @@ class Helper
 
         // for versions bellow 3.0
         return 'extension';
+    }
+
+    public static function getPackedBox(DeliveryPointInterface $delivery_point, ItemList $item_list): PackedBox
+    {
+        $dimensions_array = $delivery_point->getMaxDimensions(false);
+
+        $max_length = $dimensions_array[ParcelProduct::DIMENSION_LENGTH] === 0.0 ? ParcelProduct::UNLIMITED : $dimensions_array[ParcelProduct::DIMENSION_LENGTH];
+        $max_width = $dimensions_array[ParcelProduct::DIMENSION_WIDTH] === 0.0 ? ParcelProduct::UNLIMITED : $dimensions_array[ParcelProduct::DIMENSION_WIDTH];
+        $max_height = $dimensions_array[ParcelProduct::DIMENSION_HEIGHT] === 0.0 ? ParcelProduct::UNLIMITED : $dimensions_array[ParcelProduct::DIMENSION_HEIGHT];
+        $max_weight = $delivery_point->getMaxWeight() === 0.0 ? ParcelProduct::UNLIMITED : $delivery_point->getMaxWeight();
+
+
+        $box = new ParcelBox(
+            $max_length,
+            $max_width,
+            $max_height,
+            $max_weight,
+            $delivery_point->getMaxDimensions() . ' ' . $max_weight // using formated dimensions string as reference + max weight
+        );
+
+        $packer = new VolumePacker($box, $item_list);
+
+        return $packer->pack();
+    }
+
+    public static function doesParcelFitBox(DeliveryPointInterface $delivery_point, ItemList $item_list)
+    {
+        $packed_box = self::getPackedBox($delivery_point, $item_list);
+
+        return $packed_box->getItems()->count() === $item_list->count();
     }
 }

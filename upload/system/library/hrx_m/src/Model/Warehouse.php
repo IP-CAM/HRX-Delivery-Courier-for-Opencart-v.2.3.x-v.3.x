@@ -7,6 +7,7 @@ use Mijora\HrxOpencart\OpenCart\DbTables;
 
 class Warehouse implements JsonSerializable
 {
+    const ALL_WAREHOUSES = -1;
     public $id;
     public $name;
     public $country;
@@ -56,6 +57,11 @@ class Warehouse implements JsonSerializable
         return $this;
     }
 
+    public function getNameWithAddress()
+    {
+        return $this->name . ' [ ' . $this->address . ', ' . $this->zip . ' ' . $this->city . ', ' . $this->country . ' ]';
+    }
+
     public function getStringAsMySqlValues($db)
     {
         return "(
@@ -100,17 +106,23 @@ class Warehouse implements JsonSerializable
 
     public static function getPage($page, $limit, $db)
     {
-        if ($page < 0) {
+        $limit_sql = '';
+
+        if ((int) $page < 0) {
             $page = 1;
         }
-        $offset = ((int) $page - 1) * (int) $limit;
+
+        if ($limit !== self::ALL_WAREHOUSES) {
+            $offset = ((int) $page - 1) * (int) $limit;
+            $limit_sql = 'LIMIT ' . $offset . ', ' . (int) $limit;
+        }
 
         $sql_result = $db->query(
             '
             SELECT `id`, `name`, `country`, `city`, `zip`, `address`, `is_test`, `is_default`
             FROM ' . DbTables::TABLE_WAREHOUSE . '
             ORDER BY `is_default` DESC, `name`
-            LIMIT ' . $offset . ', ' . (int) $limit // for now no pagination with warehouse list
+            ' . $limit_sql
         );
 
         if (empty($sql_result->rows)) {
