@@ -94,59 +94,7 @@ class DbTables
             "
             INSERT INTO " . self::TABLE_PARCEL_DEFAULT . " (category_id) VALUES (0)
                 ON DUPLICATE KEY UPDATE category_id = 0
-            ",
-            // "
-            // CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "omniva_int_m_option_country` (
-            //     `option_id` int(11) unsigned NOT NULL,
-            //     `country_code` varchar(4) NOT NULL DEFAULT '',
-            //     `offer_priority` tinyint(1) DEFAULT NULL,
-            //     `price_type` tinyint(1) DEFAULT NULL,
-            //     `price` decimal(15,4) DEFAULT NULL,
-            //     `free_shipping` decimal(15,4) DEFAULT NULL,
-            //     PRIMARY KEY (`option_id`,`country_code`)
-            //   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            // ",
-            // "
-            // CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "omniva_int_m_order` (
-            //     `order_id` int(11) unsigned NOT NULL,
-            //     `selected_service` varchar(50) DEFAULT NULL,
-            //     `offer_data` text,
-            //     `terminal_id` varchar(200) DEFAULT NULL,
-            //     `terminal_data` text,
-            //     `added_at` datetime DEFAULT NULL,
-            //     `updated_at` datetime DEFAULT NULL,
-            //     PRIMARY KEY (`order_id`)
-            //   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            // ",
-            // "
-            // CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "omniva_int_m_order_api` (
-            //     `id` int(11) unsigned NOT NULL AUTO_INCREMENT,
-            //     `order_id` int(11) unsigned NOT NULL,
-            //     `api_cart_id` varchar(255) DEFAULT NULL,
-            //     `api_shipment_id` varchar(255) DEFAULT NULL,
-            //     `created_at` datetime DEFAULT NULL,
-            //     `canceled` tinyint(1) NOT NULL DEFAULT '0',
-            //     PRIMARY KEY (`id`),
-            //     KEY `order_id` (`order_id`),
-            //     KEY `api_cart_id` (`api_cart_id`),
-            //     KEY `api_shipment_id` (`api_shipment_id`)
-            //   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            // ",
-            // "
-            // CREATE TABLE IF NOT EXISTS `" . DB_PREFIX . "omniva_int_m_parcel_default` (
-            //     `category_id` int(11) unsigned NOT NULL,
-            //     `weight` decimal(15,8) NOT NULL DEFAULT '1.00000000',
-            //     `length` decimal(15,8) NOT NULL DEFAULT '10.00000000',
-            //     `width` decimal(15,8) NOT NULL DEFAULT '10.00000000',
-            //     `height` decimal(15,8) NOT NULL DEFAULT '10.00000000',
-            //     `hs_code` varchar(255) DEFAULT NULL,
-            //     PRIMARY KEY (`category_id`),
-            //     UNIQUE KEY `category_id` (`category_id`)
-            //   ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
-            // ",
-            // "
-            // INSERT INTO " . DB_PREFIX . "omniva_int_m_parcel_default (category_id) VALUES (0)
-            // "
+            "
         ];
 
         foreach ($sql_array as $sql) {
@@ -162,12 +110,7 @@ class DbTables
             "DROP TABLE IF EXISTS `" . self::TABLE_DELIVERY_COURIER . "`",
             "DROP TABLE IF EXISTS `" . self::TABLE_PRICE . "`",
             "DROP TABLE IF EXISTS `" . self::TABLE_ORDER . "`",
-            "DROP TABLE IF EXISTS `" . self::TABLE_PARCEL_DEFAULT . "`",
-            // "DROP TABLE IF EXISTS `" . DB_PREFIX . "omniva_int_m_option`",
-            // "DROP TABLE IF EXISTS `" . DB_PREFIX . "omniva_int_m_option_country`",
-            // "DROP TABLE IF EXISTS `" . DB_PREFIX . "omniva_int_m_order`",
-            // "DROP TABLE IF EXISTS `" . DB_PREFIX . "omniva_int_m_order_api`",
-            // "DROP TABLE IF EXISTS `" . DB_PREFIX . "omniva_int_m_parcel_default`"
+            "DROP TABLE IF EXISTS `" . self::TABLE_PARCEL_DEFAULT . "`"
         ];
 
         foreach ($sql_array as $sql) {

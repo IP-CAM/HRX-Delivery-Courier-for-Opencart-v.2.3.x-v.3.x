@@ -95,7 +95,7 @@ var HRX_M_MANIFEST = {
         data.set('order_id', orderId);
 
         HRX_M_MANIFEST.ajax('registerHrxOrder', function (json) {
-            console.log(json);
+            // console.log(json);
             if (json.data.html) {
                 HRX_M_MANIFEST.refreshRowHtml(orderId, json.data.html);
 
@@ -117,7 +117,7 @@ var HRX_M_MANIFEST = {
         data.set('label_type', e.target.dataset.labelType);
 
         HRX_M_MANIFEST.ajax('getLabel', function (json) {
-            console.log(json);
+            // console.log(json);
             if (json.data.label.file_content) {
                 MIJORA_COMMON.downloadPdf(json.data.label.file_content, json.data.label.file_name);
             }
@@ -143,7 +143,7 @@ var HRX_M_MANIFEST = {
         });
 
         HRX_M_MANIFEST.ajax('getMultipleLabels', function (json) {
-            console.log(json);
+            // console.log(json);
 
             if (json.data.labels) {
                 Object.keys(json.data.labels).forEach(key => {
@@ -184,7 +184,7 @@ var HRX_M_MANIFEST = {
         data.set('order_id', orderId);
 
         HRX_M_MANIFEST.ajax('getHrxOrderData', function (json) {
-            console.log(json);
+            // console.log(json);
             if (json.data.html) {
                 HRX_M_MANIFEST.refreshRowHtml(orderId, json.data.html);
             }
@@ -200,7 +200,7 @@ var HRX_M_MANIFEST = {
         data.set('state', isReady);
 
         HRX_M_MANIFEST.ajax('changeHrxOrderState', function (json) {
-            console.log(json);
+            // console.log(json);
             if (json.data.html) {
                 HRX_M_MANIFEST.refreshRowHtml(orderId, json.data.html);
             }
@@ -235,7 +235,7 @@ var HRX_M_MANIFEST = {
         });
 
         HRX_M_MANIFEST.ajax('massChangeHrxOrderState', function (json) {
-            console.log(json);
+            // console.log(json);
             const pageNr = HRX_M_MANIFEST.getCurrentPageNumber();
 
             if (json.data.errors && Object.keys(json.data.errors).length > 0) {
@@ -305,7 +305,7 @@ var HRX_M_MANIFEST = {
         data.set('order_id', orderId);
 
         HRX_M_MANIFEST.ajax('cancelHrxOrder', function (json) {
-            console.log(json);
+            // console.log(json);
             if (json.data.html) {
                 HRX_M_MANIFEST.refreshRowHtml(orderId, json.data.html);
             }

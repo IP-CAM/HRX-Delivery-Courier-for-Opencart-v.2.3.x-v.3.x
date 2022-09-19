@@ -73,8 +73,6 @@
         <li><a href="#tab-delivery-courier" data-toggle="tab">{{ hrx_m_tab_delivery_courier }}</a></li>
         <li><a href="#tab-prices" data-toggle="tab">{{ hrx_m_tab_prices }}</a></li>
         <li><a href="#tab-parcel-default" data-toggle="tab">{{ hrx_m_tab_parcel_default }}</a></li>
-        {# <li><a href="#tab-services" data-toggle="tab">{{ hrx_m_tab_services }}</a></li>
-        <li><a href="#tab-parcel-defaults" data-toggle="tab">{{ hrx_m_tab_parcel_defaults }}</a></li> #}
     </ul>
 
     <div class="tab-content">
@@ -113,101 +111,17 @@
             {{ partial_tab_parcel_default }}
         </div>
 
-        <!-- Parcel Defaults -->
-        {# <div class="tab-pane" id="tab-parcel-defaults">
-            
-        </div> #}
-
     </div> <!-- Content panel -->
-    
-    <!-- Parcel Defaults Edit Modal -->
-    {# <div class="omniva-int-m-modal hidden" id="parcel_default_modal">
-        <div class="panel panel-default">
-            <div class="panel-heading">
-                <h3 class="panel-title" id="parcel_default_modal_title">PLACEHOLDER</h3>
-            </div>
-            <div class="panel-body form-horizontal">
-                <input type="hidden" name="hrx_m_pd_category_id" id="modal-pd-category-id" value="{{ global_parcel_default.category_id }}">
-
-                <div class="alert alert-info"><i class="fa fa-exclamation-circle"></i>
-                    {{ hrx_m_help_parcel_defaults }}
-                </div>
-
-                <div class="form-group">
-                    <label class="col-sm-2 control-label" for="modal-pd-hs-code">{{ hrx_m_label_pd_hs_code }}</label>
-                    <div class="col-sm-10">
-                        <input type="text" name="hrx_m_pd_hs_code" value="{{ global_parcel_default.hs_code }}" id="modal-pd-hs-code" class="form-control" />
-                    </div>
-                </div>
-
-                <div class="form-group">
-                    <label class="col-sm-2 control-label" for="modal-pd-weight">{{ hrx_m_label_pd_weight }}</label>
-                    <div class="col-sm-10">
-                        <div class="input-group">
-                            <input type="text" name="hrx_m_pd_weight" value="{{ global_parcel_default.weight }}" id="modal-pd-weight" class="form-control" />
-                            <span class="input-group-addon">kg</span>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group pd-dimensions">
-                    <label class="col-sm-2 control-label" for="modal-pd-length">{{ hrx_m_label_pd_dimensions }}</label>
-                    <div class="col-sm-10">
-                        <div class="row">
-                            <label class="col-sm-2 control-label" for="modal-pd-length">{{ hrx_m_label_pd_length }}</label>
-                            <div class="col-sm-4">
-                                <div class="input-group">
-                                    <input type="text" name="hrx_m_pd_length" value="{{ global_parcel_default.length }}" id="modal-pd-length" class="form-control" />
-                                    <span class="input-group-addon">cm</span>
-                                </div>
-                            </div>
-                            
-                            <label class="col-sm-2 control-label" for="modal-pd-width">{{ hrx_m_label_pd_width }}</label>
-                            <div class="col-sm-4">
-                                <div class="input-group">
-                                    <input type="text" name="hrx_m_pd_width" value="{{ global_parcel_default.width }}" id="modal-pd-width" class="form-control" />
-                                    <span class="input-group-addon">cm</span>
-                                </div>
-                            </div>
-
-                            <label class="col-sm-2 control-label" for="modal-pd-height">{{ hrx_m_label_pd_height }}</label>
-                            <div class="col-sm-4">
-                                <div class="input-group">
-                                    <input type="text" name="hrx_m_pd_height" value="{{ global_parcel_default.height }}" id="modal-pd-height" class="form-control" />
-                                    <span class="input-group-addon">cm</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="form-group text-center">
-                    <button id="save-parcel-default-btn" class="btn btn-default center">{{ hrx_m_generic_btn_save }}</button>
-                    <button id="cancel-parcel-default-btn" class="btn btn-default center">{{ hrx_m_generic_btn_cancel }}</button>
-                </div>
-            </div>
-        </div>
-    </div> #}
 </div>
 
-{# <link rel="stylesheet" href="view/javascript/hrx_m/select2.min.css">
-<link rel="stylesheet" href="view/javascript/hrx_m/select2_bs3.css">
-<script src="view/javascript/hrx_m/select2.min.js" defer></script> #}
 <link rel="stylesheet" href="view/javascript/hrx_m/admin.css">
 <script>
 var HRX_M_SETTINGS_DATA = {
     syncWarehousePerPage: {{ sync_warehouse_per_page }},
     syncDeliveryPointsPerPage: {{ sync_delivery_points_per_page }},
     defaultWarehouse: {{ default_warehouse|json_encode() }},
-    // shippingTypes: {{ shipping_types|json_encode() }},
-    // servicesList: {{ services_list|json_encode() }},
-    // globalParcelDefault: {{ global_parcel_default|json_encode() }},
     url_ajax: '{{ ajax_url }}',
-    // api_coutries: {{ countries|json_encode() }},
-    geo_zones: {{ geo_zones|json_encode() }},
-    // priceTypes: {{ price_types|json_encode() }},
-    // priceTypeAddons: {{ price_type_addons|json_encode() }},
-    // pricePriorityType: {{ priority_types|json_encode() }}
+    geo_zones: {{ geo_zones|json_encode() }}
 };
 </script>
 <script src="{{ mijora_common_js_path }}"></script>

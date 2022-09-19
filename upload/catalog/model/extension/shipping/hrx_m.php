@@ -11,29 +11,13 @@ use Mijora\HrxOpencart\Model\ParcelItem;
 use Mijora\HrxOpencart\Model\ParcelProduct;
 use Mijora\HrxOpencart\Model\Price;
 use Mijora\HrxOpencart\Params;
-use OmnivaApi\Item;
 
 require_once(DIR_SYSTEM . 'library/hrx_m/vendor/autoload.php');
-
-// use Mijora\OmnivaIntOpencart\Controller\OfferApi;
-// use Mijora\OmnivaIntOpencart\Controller\ParcelCtrl;
-// use Mijora\OmnivaIntOpencart\Helper;
-// use Mijora\OmnivaIntOpencart\Model\Country;
-// use Mijora\OmnivaIntOpencart\Model\Offer;
-// use Mijora\OmnivaIntOpencart\Model\Service;
-// use Mijora\OmnivaIntOpencart\Model\ShippingOption;
-// use Mijora\OmnivaIntOpencart\Params;
-// use OmnivaApi\Receiver;
 
 class ModelExtensionShippingHrxM extends Model
 {
     public function getQuote($address)
     {
-        // must have EUR currency setup
-        // if (!$this->currency->has('EUR')) {
-        //     return [];
-        // }
-
         $this->load->language('extension/shipping/hrx_m');
 
         $setting_prefix = '';
@@ -76,128 +60,8 @@ class ModelExtensionShippingHrxM extends Model
             $item_list->insert($item, $dimensions->quantity);
         }
 
-        echo "<pre>" . json_encode($product_dimensions, JSON_PRETTY_PRINT) . "</pre>" . PHP_EOL;
-        echo "<pre>" . json_encode($item_list->count(), JSON_PRETTY_PRINT) . "</pre>" . PHP_EOL;
-
         $courier_quote = $this->getCourierQuote($priceObj, $receiver_country_code, $item_list);
         $terminal_quote = $this->getTerminalQuote($priceObj, $receiver_country_code, $item_list);
-
-        // $price_range = $priceObj->getPriceValue();
-        // // echo "<pre>Price: " . json_encode($priceObj, JSON_PRETTY_PRINT) . "</pre>";
-        // if (!$price_range) {
-        //     // echo "<pre>Range? $price_range</pre>";
-        //     return [];
-        // }
-
-        // $cost = $this->calculateCost($price_range, $priceObj->getRangeTypeValue());
-        // if ($cost < 0) {
-        //     // echo "<pre>Cost $cost</pre>";
-        //     return [];
-        // }
-
-        // // get shipping options with just receiver country data
-        // /** @var DeliveryPoint[] */
-        // $delivery_points = DeliveryPoint::getDeliveryPointsByCountryCode($this->db, $receiver_country_code);
-
-        // // echo "<pre>Weight: $cart_weight</pre>";
-        // // echo "<pre>Price: " . json_encode($priceObj, JSON_PRETTY_PRINT) . "</pre>";
-
-        // $method_data = array();
-
-        // // if disabled or wrong geo zone etc, return empty array (no options)
-        // if (empty($delivery_points)) {
-        //     // echo "<pre>NO DELIVERY LOCATIONS</pre>";
-        //     return $method_data;
-        // }
-
-        // // cart subtotal to use with free_shipping setting
-        // // $sub_total = $this->cart->getSubTotal();
-        // // make sure its in EUR
-        // // $sub_total_eur = $this->currency->convert($sub_total,  $this->session->data['currency'], 'EUR');
-        // // echo "<pre>$sub_total -> $sub_total_eur</pre>";
-
-        // // Add shipping options
-        // $tax_class_id = $this->config->get(Params::PREFIX . 'tax_class_id');
-
-        // $cart_weight = $this->getCartWeightInKg();
-
-        // foreach ($delivery_points as $delivery_point) {
-        //     $location_max_weight = $delivery_point->getMaxWeight();
-
-        //     // skip locations which max weight is les than current cart weight
-        //     if ($location_max_weight !== 0 && $location_max_weight < $cart_weight) {
-        //         // echo "<pre>$location_max_weight &lt; $cart_weight [ " . $delivery_point->id . " ]</pre>";
-        //         continue;
-        //     }
-
-        //     // echo "<pre>" . $option->id . "\n" . json_encode($option, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) . "</pre>";
-        //     // make sure we have valid type and it has receiver country
-        //     // if (!isset(Service::TYPE_API_CODE[$option->type]) || !isset($option->countries[$receiver_country])) {
-        //     //     continue;
-        //     // }
-
-        //     // $option_country = $option->countries[$receiver_country];
-
-        //     // $type = Service::TYPE_API_CODE[$option->type]; // will be used as part of shipping code key
-        //     // $allowed_services = array_map('trim', explode(Offer::SEPARATOR_ALLOWED_SERVICES, $option->allowed_services));
-
-        //     // // if set on country use country otherwise use option value
-        //     // $priority = $option_country->offer_priority !== null ? $option_country->offer_priority : $option->offer_priority;
-        //     // $price_type = $option_country->price_type !== null ? $option_country->price_type : $option->price_type;
-        //     // $price = $option_country->price !== null ? $option_country->price : $option->price;
-        //     // $free_shipping = $option_country->free_shipping !== null ? $option_country->free_shipping : $option->free_shipping;
-
-        //     // price must be set
-        //     // if ($price === null) {
-        //     //     continue;
-        //     // }
-
-        //     // // sort options
-        //     // Offer::sortByPriority($offers, $priority);
-
-        //     // // filter allowed services
-        //     // $option_offers = array_filter($offers, function ($offer) use ($allowed_services) {
-        //     //     if (in_array($offer->get(Offer::SERVICE_CODE), $allowed_services)) {
-        //     //         return true;
-        //     //     }
-
-        //     //     return false;
-        //     // });
-
-        //     // $option_offers = array_values($option_offers);
-
-
-        //     // if (empty($option_offers)) {
-        //     //     continue;
-        //     // }
-
-        //     // // we want only first one from list
-        //     // $offer = $option_offers[0];
-
-        //     // $cost = (float) $offer->getPrice($price, $price_type);
-        //     // // echo "<pre>$price ?? $cost ?? $free_shipping</pre>";
-        //     // // set 0 cost if free shipping enabled and subtotal is higher
-        //     // if ($free_shipping !== null && (float) $free_shipping <= $sub_total_eur) {
-        //     //     $cost = 0;
-        //     // }
-
-        //     $key = 'terminal_' . $delivery_point->id; //$offer->get(Offer::SERVICE_CODE);
-        //     // $this->session->data['omniva_int_m_cart_offers'][$key] = Helper::base64Encode($offer, true);
-        //     $quote_data[$key] = array(
-        //         'code'         => Params::SETTINGS_CODE . '.' . $key,
-        //         'title'        => 'HRX Delivery: ' . $delivery_point->address,
-        //         'cost'         => $cost,
-        //         'tax_class_id' => $tax_class_id,
-        //         'text'         => $this->currency->format(
-        //             $this->tax->calculate(
-        //                 $cost,
-        //                 $tax_class_id,
-        //                 $this->config->get('config_tax')
-        //             ),
-        //             $this->session->data['currency']
-        //         )
-        //     );
-        // }
 
         $internal_sort_order = (int) $this->config->get(Params::PREFIX . 'sort_order_internal');
 
@@ -217,7 +81,7 @@ class ModelExtensionShippingHrxM extends Model
             'sort_order' => $this->config->get($setting_prefix . Params::PREFIX . 'sort_order'),
             'error'      => false
         ];
-        // echo "<code>" . json_encode($method_data, JSON_PRETTY_PRINT) . "</code>";
+
         return $method_data;
     }
 
@@ -240,7 +104,6 @@ class ModelExtensionShippingHrxM extends Model
         $max_courier_weight = $delivery_courier->getMaxWeight();
 
         if ($max_courier_weight !== 0.0 && $max_courier_weight < $this->getCartWeightInKg()) {
-            // echo "<code>" . json_encode([$max_courier_weight, $this->getCartWeightInKg()], JSON_PRETTY_PRINT) . "</code>";
             return [];
         }
 
@@ -322,20 +185,6 @@ class ModelExtensionShippingHrxM extends Model
 
             if (!isset($can_fit[$box_key])) {
                 $can_fit[$box_key] = Helper::doesParcelFitBox($delivery_point, $item_list);
-                // $box = new ParcelBox(
-                //     $dimensions_array[DeliveryPoint::DIMENSION_LENGTH],
-                //     $dimensions_array[DeliveryPoint::DIMENSION_WIDTH],
-                //     $dimensions_array[DeliveryPoint::DIMENSION_HEIGHT],
-                //     $location_max_weight,
-                //     $box_key
-                // );
-
-                // $packer = new VolumePacker($box, $item_list);
-
-                // $packed_box = $packer->pack();
-
-                // $can_fit[$box_key] = $packed_box->getItems()->count() === $item_list->count();
-                // echo "<pre>" . json_encode([$box_key, $packed_box->getItems()->count()], JSON_PRETTY_PRINT) . "</pre>" . PHP_EOL;
             }
 
             if ($can_fit[$box_key] === false) {
@@ -360,14 +209,7 @@ class ModelExtensionShippingHrxM extends Model
             );
         }
 
-        echo "<pre>" . json_encode($can_fit, JSON_PRETTY_PRINT) . "</pre>" . PHP_EOL;
-
         return $quote_data;
-    }
-
-    protected function fitsDimensions($dimensions, $item_list)
-    {
-        
     }
 
     protected function getCartWeightInKg()

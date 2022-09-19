@@ -81,7 +81,7 @@ const HRX_M_ORDER = {
         data.set('is_order_panel', true);
 
         HRX_M_ORDER.ajax('registerHrxOrder', function (json) {
-            console.log(json);
+            // console.log(json);
             if (json.data.registered) {
                 MIJORA_COMMON.alert({ message: json.data.registered });
                 HRX_M_ORDER.getHrxOrderData();
@@ -98,7 +98,7 @@ const HRX_M_ORDER = {
         data.set('is_order_panel', true);
 
         HRX_M_ORDER.ajax('cancelHrxOrder', function (json) {
-            console.log(json);
+            // console.log(json);
             if (json.data.html) {
                 HRX_M_ORDER.wrapper.innerHTML = json.data.html;
             }
@@ -130,7 +130,7 @@ const HRX_M_ORDER = {
         data.set('is_order_panel', true);
 
         HRX_M_ORDER.ajax('changeHrxOrderState', function (json) {
-            console.log(json);
+            // console.log(json);
             if (json.data.html) {
                 HRX_M_ORDER.wrapper.innerHTML = json.data.html;
             }
@@ -141,7 +141,7 @@ const HRX_M_ORDER = {
     },
 
     editOrderAction: function () {
-        console.log(HRX_M_ORDER.customData);
+        // console.log(HRX_M_ORDER.customData);
 
         if (HRX_M_ORDER.isCustomDataChanged() === false) {
             console.log('[ HRX_M ] No changes');
@@ -197,7 +197,7 @@ const HRX_M_ORDER = {
             HRX_M_ORDER.checkEditBtnState();
             return;
         }
-        console.log(el.value, el.dataset.value);
+
         const newValue = el.value;
         const originalValue = el.dataset.value;
         HRX_M_ORDER.customData[el.name] = newValue !== originalValue ? newValue : null;
@@ -217,7 +217,7 @@ const HRX_M_ORDER = {
         data.set('label_type', e.target.dataset.labelType);
 
         HRX_M_ORDER.ajax('getLabel', function (json) {
-            console.log(json);
+            // console.log(json);
             if (json.data.label.file_content) {
                 MIJORA_COMMON.downloadPdf(json.data.label.file_content, json.data.label.file_name);
             }
@@ -257,7 +257,7 @@ const HRX_M_ORDER = {
         fetch(`${HRX_M_ORDER_DATA.urlAjax}&action=${action}`, fetchInit)
             .then(res => res.json())
             .then(json => {
-                console.log(json);
+                // console.log(json);
                 if (!json.data) {
                     MIJORA_COMMON.alert({ message: 'Invalid response from server' });
                     return;
@@ -274,7 +274,7 @@ const HRX_M_ORDER = {
                 }
             })
             .catch((reason) => {
-                console.log(reason);
+                // console.log(reason);
                 MIJORA_COMMON.alert({ message: reason });
             })
             .finally(() => {

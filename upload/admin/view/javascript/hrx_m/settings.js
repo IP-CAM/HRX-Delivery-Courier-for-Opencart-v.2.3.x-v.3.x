@@ -231,7 +231,7 @@ var HRX_M = {
         data.set('warehouse_id', checkbox.dataset.warehouseId);
 
         HRX_M.ajax('setDefaultWarehouse', (json) => {
-            console.log(json);
+            // console.log(json);
 
             warehousePane.querySelectorAll('[name="hrx_m_default_warehouse"]:checked').forEach(item => {
                 if (item.dataset.warehouseId === checkbox.dataset.warehouseId) {
@@ -280,7 +280,6 @@ var HRX_M = {
             price_courier_range_type: priceTab.querySelector('#price-table [name="courier_price_range_type"]').value
         };
 
-        console.log(data);
         HRX_M.savePriceAction(data, (response) => {
             if (!response.result) {
                 return;
@@ -405,8 +404,6 @@ var HRX_M = {
         data.set('country_code', countryCode);
 
         HRX_M.ajax('deletePrice', (json) => {
-            console.log('deletePrice', json);
-
             if (!json.data.result) {
                 return;
             }
@@ -448,7 +445,7 @@ var HRX_M = {
         });
 
         HRX_M.ajax('savePrice', (json) => {
-            console.log(json);
+            // console.log(json);
 
             if (typeof callback === 'function') {
                 callback(json.data);

@@ -176,22 +176,16 @@ class Price implements JsonSerializable
         $courier_country_list = DeliveryCourier::getCountryList($db);
         $terminal_country_list = DeliveryPoint::getCountryList($db);
 
-        $courier_country_list = array_map(function($item) {
+        $courier_country_list = array_map(function ($item) {
             return $item['iso_code_2'];
         }, $courier_country_list);
-        
-        $terminal_country_list = array_map(function($item) {
+
+        $terminal_country_list = array_map(function ($item) {
             return $item['iso_code_2'];
         }, $terminal_country_list);
 
         $country_list = array_merge($courier_country_list, $terminal_country_list);
 
-        // $sql = "
-        //     SELECT DISTINCT hmdp.`country` as `iso_code_2`, c.`name` FROM `" . DbTables::TABLE_DELIVERY_POINT . "` hmdp 
-        //     LEFT JOIN `" . DbTables::TABLE_PRICE . "` hmp ON hmp.`country_code` = hmdp.`country`
-        //     LEFT JOIN `" . DB_PREFIX . "country` c ON c.`iso_code_2` = hmdp.`country`
-        //     WHERE hmdp.`active` IN (1) AND c.`name` IS NOT NULL AND hmp.`country_code` IS NULL
-        // ";
         $sql = "
             SELECT c.`iso_code_2` as `iso_code_2`, c.`name` FROM `" . DB_PREFIX . "country` c 
             LEFT JOIN `" . DbTables::TABLE_PRICE . "` hmp ON hmp.`country_code` = c.`iso_code_2`

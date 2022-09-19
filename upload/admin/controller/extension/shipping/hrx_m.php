@@ -649,7 +649,6 @@ class ControllerExtensionShippingHrxM extends Controller
         $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
 
         $page = (int) (isset($this->request->post['page']) ? $this->request->post['page'] : 1);
-        // $per_page = (int) (isset($this->request->post['per_page']) ? $this->request->post['per_page'] : 10);
 
         $api = new HrxApi($token, $test_mode);
         // $response
@@ -674,7 +673,6 @@ class ControllerExtensionShippingHrxM extends Controller
                 DeliveryCourier::insertIntoDb($delivery_locations_array, $this->db);
             }
 
-            // $has_more = (bool) count($delivery_locations);
             $has_more = false; // currently delivery locations resutls are not paginated
 
             if (!$has_more) {
@@ -759,16 +757,6 @@ class ControllerExtensionShippingHrxM extends Controller
 
     private function savePrice(AjaxResponse $response)
     {
-        // $country = isset($this->request->post['country_code']) ? $this->request->post['country_code'] : null;
-        // $country = isset($this->request->post['country']) ? $this->request->post['country'] : null;
-        // $price = isset($this->request->post['price']) ? $this->request->post['price'] : null;
-        // $price_range_type = isset($this->request->post['price_range_type']) ? $this->request->post['price_range_type'] : null;
-
-        // if (empty($country) || empty($price) || $price_range_type === null) {
-        //     $response->setError('Country, price or range of prices and price range type are required');
-        //     return;
-        // }
-
         $data = [];
         $errors = [];
         foreach (Price::PRICE_DATA_FIELDS as $field => $cast_type) {
@@ -1253,9 +1241,6 @@ class ControllerExtensionShippingHrxM extends Controller
 
             $response->addData('hrx_order_data', $hrx_order_data);
 
-            // throw new Exception("Only testing");
-
-
             $order_response = $api->generateOrder($hrx_order_data);
             // $order_response = [
             //     "id" => "81f32a75-4cf9-4bcf-8536-7eb2836f4d23",
@@ -1490,34 +1475,11 @@ class ControllerExtensionShippingHrxM extends Controller
             return;
         }
 
-        // $token = $this->config->get(Params::CONFIG_TOKEN);
-        // $test_mode = (bool) $this->config->get(Params::CONFIG_TEST_MODE);
-
         $id_language = (int) $this->config->get('config_language_id');
 
         $order = Order::getManifestOrder($this->db, $order_id, $id_language);
 
-        // needs registration
-        // if (!$order->getHrxOrderId()) {
-        //     $response->setError($this->language->get(Params::PREFIX . 'error_order_not_registered'));   
-        // }
-
-        // // order canceled
-        // if ($order->isCancelled()) {
-        //     $response->setError($this->language->get(Params::PREFIX . 'error_order_canceled'));   
-        // }
-
         try {
-            // $api = new HrxApi($token, $test_mode);
-            // $order_data = $api->getOrder($order->getHrxOrderId());
-
-            // if (isset($order_data['id'])) {
-            //     $order->setHrxOrderData($order_data);
-            //     $order->save();
-            // }
-
-            // $response->addData('hrx_order', $order_data);
-
             $this->updateHrxDataFromApi($order);
 
             if ($is_order_panel) {
@@ -2086,7 +2048,6 @@ class ControllerExtensionShippingHrxM extends Controller
             $api = new HrxApi($token, $test_mode);
             $tracking_events = $api->getTrackingEvents($order->getHrxOrderId());
             $tracking_events = array_reverse($tracking_events);
-            // $response->addData('getTrackingInformation', $api->getTrackingInformation($order->getHrxTrackingNumber()));
             $response->addData('getTrackingEvents', $tracking_events);
 
             $response->addData(

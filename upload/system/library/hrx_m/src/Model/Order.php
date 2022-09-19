@@ -444,11 +444,6 @@ class Order implements JsonSerializable
         $sql .= "
             FROM `" . DB_PREFIX . "order` o
             LEFT JOIN `" . DbTables::TABLE_ORDER . "` hrx_order ON hrx_order.order_id = o.order_id
-            #LEFT JOIN `" . DB_PREFIX . "omniva_m_label_history` omlh ON omlh.order_id = o.order_id AND omlh.`id_label_history` IN (
-            #	SELECT MAX(id_label_history) as latest_history_id 
-            #    FROM `" . DB_PREFIX . "omniva_m_label_history`
-            #    GROUP BY order_id
-            #)
             WHERE o.shipping_code LIKE '" . Params::SETTINGS_CODE . ".%'
         ";
 
