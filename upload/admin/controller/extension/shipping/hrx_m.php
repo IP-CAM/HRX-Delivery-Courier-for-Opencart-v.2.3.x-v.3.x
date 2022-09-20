@@ -977,7 +977,7 @@ class ControllerExtensionShippingHrxM extends Controller
 
     private function getMijoraCommonJsPath()
     {
-        return HTTPS_CATALOG . 'catalog/view/javascript/hrx_m/common.js?20220730';
+        return HTTPS_CATALOG . 'catalog/view/javascript/hrx_m/common.js?20220920';
     }
 
     /**

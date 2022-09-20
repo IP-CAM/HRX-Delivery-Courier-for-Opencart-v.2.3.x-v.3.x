@@ -23,6 +23,7 @@ $_['hrx_m_generic_btn_save'] = 'Save';
 $_['hrx_m_generic_btn_cancel'] = 'Cancel';
 $_['hrx_m_generic_btn_change'] = 'Change';
 $_['hrx_m_generic_btn_filter'] = 'Filter';
+$_['hrx_m_generic_btn_filter_reset'] = 'Filter reset';
 
 // Generic Messages
 $_['hrx_m_msg_setting_saved'] = 'Settings saved';

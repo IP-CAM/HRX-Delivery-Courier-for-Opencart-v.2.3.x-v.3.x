@@ -6,6 +6,10 @@ var HRX_M_MANIFEST = {
             e.preventDefault();
             HRX_M_MANIFEST.getManifestPage(1);
         });
+        MIJORA_COMMON.addGlobalListener('click', '[data-btn-filter-reset]', (e) => {
+            e.preventDefault();
+            HRX_M_MANIFEST.resetFilter();
+        });
 
         MIJORA_COMMON.addGlobalListener('change', '[data-check-all]', this.handleCheckAllAction);
 
@@ -177,6 +181,16 @@ var HRX_M_MANIFEST = {
         });
 
         return filters;
+    },
+
+    resetFilter: function() {
+        document.querySelectorAll('input[name^="filter_"]').forEach(item => {
+            item.value = '';
+        });
+        document.querySelectorAll('select[name^="filter_"]').forEach(item => {
+            item.value = 0;
+        });
+        HRX_M_MANIFEST.getManifestPage(1);
     },
 
     getHrxOrderData: function (orderId) {

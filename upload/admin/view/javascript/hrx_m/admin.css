@@ -184,6 +184,12 @@ td.hrx-order-data > p > span:first-child {
     font-weight: 700;
 }
 
+.hrx-filter-btn-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
 /* order panel */
 [data-hrx-order-panel] > .panel-heading {
     display: flex;

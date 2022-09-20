@@ -1,4 +1,4 @@
-<link rel="stylesheet" href="view/javascript/hrx_m/admin.css">
+<link rel="stylesheet" href="view/javascript/hrx_m/admin.css?20220920">
 {{ header }}
 {{ column_left }}
 
@@ -80,7 +80,8 @@
                             </select>
                         </div>
 
-                        <div class="form-group text-right">
+                        <div class="form-group hrx-filter-btn-wrapper">
+                            <button type="button" data-btn-filter-reset class="btn btn-warning"><i class="fa fa-recycle"></i> {{ hrx_m_generic_btn_filter_reset }}</button>
                             <button type="button" data-btn-filter class="btn btn-default"><i class="fa fa-filter"></i> {{ hrx_m_generic_btn_filter }}</button>
                         </div>
                     </div>
@@ -98,6 +99,6 @@
     const HRX_M_MANIFEST_DATA = {{ hrx_m_data|json_encode }};
 </script>
 <script src="{{ mijora_common_js_path }}"></script>
-<script src="view/javascript/hrx_m/manifest.js"></script>
+<script src="view/javascript/hrx_m/manifest.js?20220920"></script>
 
 {{ footer }} 
