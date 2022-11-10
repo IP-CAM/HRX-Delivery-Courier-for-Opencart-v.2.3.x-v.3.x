@@ -12,8 +12,8 @@ class Params
 
     const DIR_MAIN = DIR_SYSTEM . 'library/hrx_m/';
 
-    const GIT_VERSION_CHECK = 'https://api.github.com/repos/mijora/hrx-opencart-demo/releases/latest';
-    const GIT_URL = 'https://github.com/mijora/hrx-opencart-demo/releases/latest';
+    const GIT_VERSION_CHECK = 'https://api.github.com/repos/hrx-plugin/hrx-opencart/releases/latest';
+    const GIT_URL = 'https://github.com/hrx-plugin/hrx-opencart/releases/latest';
     const GIT_CHECK_EVERY_HOURS = 24; // how often to check git for version. Default 24h
 
     const BASE_MOD_XML = 'hrx_m_base.ocmod.xml';
