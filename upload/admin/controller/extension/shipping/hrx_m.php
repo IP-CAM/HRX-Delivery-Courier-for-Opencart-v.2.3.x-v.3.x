@@ -31,6 +31,8 @@ class ControllerExtensionShippingHrxM extends Controller
 
     private $_cache = [];
 
+    private $hrx_translations = [];
+
     public function install()
     {
         $hrx_tables = new DbTables($this->db);
@@ -53,7 +55,8 @@ class ControllerExtensionShippingHrxM extends Controller
     public function index()
     {
         // $this->install();
-        $this->load->language('extension/shipping/hrx_m');
+        $this->hrx_translations = $this->load->language('extension/shipping/hrx_m');
+        $data = $this->mergeTranslationsIntoData([]);
 
         $this->document->setTitle($this->language->get('heading_title'));
 
@@ -351,7 +354,7 @@ class ControllerExtensionShippingHrxM extends Controller
     {
         $this->response->addHeader('Content-Type: application/json');
 
-        $this->load->language('extension/shipping/hrx_m');
+        $this->hrx_translations = $this->load->language('extension/shipping/hrx_m');
 
         $response = new AjaxResponse();
         if (!$this->validate()) {
@@ -538,7 +541,7 @@ class ControllerExtensionShippingHrxM extends Controller
             $page_limit = 30;
         }
 
-        $data = [];
+        $data = $this->mergeTranslationsIntoData([]);
 
         $data['warehouse_last_update'] = $this->config->get(Params::CONFIG_WAREHOUSE_LAST_UPDATE);
         $data['warehouses'] = Warehouse::getPage($page, $page_limit, $this->db);
@@ -632,7 +635,8 @@ class ControllerExtensionShippingHrxM extends Controller
             $page_limit = 30;
         }
 
-        $data = [];
+        $data = $this->mergeTranslationsIntoData([]);
+
         $data['delivery_points'] = DeliveryPoint::getPage($page, $page_limit, $this->db);
 
         $total_pages = ceil(DeliveryPoint::getTotalPoints($this->db, false) / $page_limit);
@@ -708,7 +712,8 @@ class ControllerExtensionShippingHrxM extends Controller
             $page_limit = 30;
         }
 
-        $data = [];
+        $data = $this->mergeTranslationsIntoData([]);
+
         $data['delivery_locations'] = DeliveryCourier::getPage($page, $page_limit, $this->db);
 
         $total_pages = ceil(DeliveryCourier::getTotalLocations($this->db, false) / $page_limit);
@@ -731,6 +736,7 @@ class ControllerExtensionShippingHrxM extends Controller
         }
 
         $data = [];
+        $data = $this->mergeTranslationsIntoData($data);
         $data['countries'] = Price::getPriceCountries($this->db);
         $data['price_range_types'] = $this->getPriceRangeTypeArray();
 
@@ -778,12 +784,14 @@ class ControllerExtensionShippingHrxM extends Controller
         try {
             $price = new Price($this->db, $data);
 
-            $response->addData('result', $price->savePrice());
-            $response->addData('price_data', $price);
-            $response->addData('price_row_html', $this->load->view('extension/shipping/hrx_m/partial/table_price_row', [
+            $template_data = [
                 'price' => $price,
                 'price_range_types' => $this->getPriceRangeTypeArray()
-            ]));
+            ];
+
+            $response->addData('result', $price->savePrice());
+            $response->addData('price_data', $price);
+            $response->addData('price_row_html', $this->load->view('extension/shipping/hrx_m/partial/table_price_row', $template_data));
         } catch (\Throwable $th) {
             $response->addData('result', false);
             $response->setError('Failed to save price');
@@ -804,7 +812,7 @@ class ControllerExtensionShippingHrxM extends Controller
 
     private function getParcelDefaultTab()
     {
-        $data = [];
+        $data = $this->mergeTranslationsIntoData([]);
 
         $data['global_parcel_default'] = ParcelDefault::getGlobalDefault($this->db);
 
@@ -835,7 +843,7 @@ class ControllerExtensionShippingHrxM extends Controller
 
         $this->load->model('catalog/category');
 
-        $data = [];
+        // $data = [];
 
         $filter_data = array(
             'sort'  => 'name',
@@ -847,15 +855,19 @@ class ControllerExtensionShippingHrxM extends Controller
         $total_categories = $this->model_catalog_category->getTotalCategories();
         $total_pages = ceil($total_categories / $page_limit);
 
-        $data = [];
+        $data = $this->mergeTranslationsIntoData([]);
+
         $oc_categories = ParcelDefault::addDefaultsIntoOcCategoryData(
             $this->model_catalog_category->getCategories($filter_data),
             $this->db
         );
 
         $data['category_list'] = [];
+
+        $template_data = $this->mergeTranslationsIntoData([]);
         foreach ($oc_categories as $oc_category) {
-            $data['category_list'][] = $this->load->view('extension/shipping/hrx_m/partial/parcel_default_category_table_row', $oc_category);
+            $template_data['oc_category_row'] = $oc_category;
+            $data['category_list'][] = $this->load->view('extension/shipping/hrx_m/partial/parcel_default_category_table_row', $template_data);
         }
 
         $data['parcel_default_pagination'] = $this->getPaginationHtml($page, $total_pages, 'getParcelDefaultPage');
@@ -881,9 +893,12 @@ class ControllerExtensionShippingHrxM extends Controller
         $oc_category = $this->model_catalog_category->getCategory($category_id);
         $oc_category['hrx_parcel_default'] = null;
 
+        $template_data = $this->mergeTranslationsIntoData([]);
+        $template_data['oc_category_row'] = $oc_category;
+
         $response->addData(
             'html',
-            $this->load->view('extension/shipping/hrx_m/partial/parcel_default_category_table_row', $oc_category)
+            $this->load->view('extension/shipping/hrx_m/partial/parcel_default_category_table_row', $template_data)
         );
     }
 
@@ -918,12 +933,13 @@ class ControllerExtensionShippingHrxM extends Controller
 
         $response->addData('save_result', $parcel_default->save());
 
+        $template_data = $this->mergeTranslationsIntoData([]);
+
         if ($parcel_default->category_id === 0) {
+            $template_data['global_parcel_default'] = $parcel_default;
             $response->addData(
                 'html',
-                $this->load->view('extension/shipping/hrx_m/partial/parcel_default_global', [
-                    'global_parcel_default' => $parcel_default
-                ])
+                $this->load->view('extension/shipping/hrx_m/partial/parcel_default_global', $template_data)
             );
             return;
         }
@@ -933,9 +949,10 @@ class ControllerExtensionShippingHrxM extends Controller
         $oc_category = $this->model_catalog_category->getCategory($parcel_default->category_id);
         $oc_category['hrx_parcel_default'] = $parcel_default;
 
+        $template_data['oc_category_row'] = $oc_category;
         $response->addData(
             'html',
-            $this->load->view('extension/shipping/hrx_m/partial/parcel_default_category_table_row', $oc_category)
+            $this->load->view('extension/shipping/hrx_m/partial/parcel_default_category_table_row', $template_data)
         );
     }
 
@@ -980,6 +997,16 @@ class ControllerExtensionShippingHrxM extends Controller
         return HTTPS_CATALOG . 'catalog/view/javascript/hrx_m/common.js?20220920';
     }
 
+    private function mergeTranslationsIntoData($data)
+    {
+        // in opencart 3.0+ translations are merged automatically
+        if (version_compare(VERSION, '3.0.0', '>=')) {
+            return $data;
+        }
+
+        return array_merge($data, $this->hrx_translations);
+    }
+
     /**
      * MANIFEST PAGE
      */
@@ -990,7 +1017,8 @@ class ControllerExtensionShippingHrxM extends Controller
 
     public function manifest()
     {
-        $this->load->language('extension/shipping/' . Params::SETTINGS_CODE);
+        $this->hrx_translations = $this->load->language('extension/shipping/' . Params::SETTINGS_CODE);
+        $data = $this->mergeTranslationsIntoData([]);
 
         $this->document->setTitle($this->language->get(Params::PREFIX . 'manifest_page_title'));
 
@@ -1106,18 +1134,19 @@ class ControllerExtensionShippingHrxM extends Controller
 
         $orders = Order::getManifestOrders($this->db, $filter, $id_language);
 
+        $template_data = $this->mergeTranslationsIntoData([]);
         $order_rows = [];
         foreach ($orders as $order) {
-            $order_rows[] = $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', [
-                'order' => $order,
-                'order_url' => $this->url->link('sale/order/info', $this->getUserToken(), true)
-            ]);
+            $template_data['order'] = $order;
+            $template_data['order_url'] = $this->url->link('sale/order/info', $this->getUserToken(), true);
+
+            $order_rows[] = $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', $template_data);
         }
 
-        $data = [
-            'order_rows' => $order_rows,
-            'order_url' => $this->url->link('sale/order/info', $this->getUserToken(), true)
-        ];
+        $data = $this->mergeTranslationsIntoData([]);
+        
+        $data['order_rows'] = $order_rows;
+        $data['order_url'] = $this->url->link('sale/order/info', $this->getUserToken(), true);
 
         $data['manifest_list_pagination'] = $this->getPaginationHtml($filter['page'], $total_pages, 'getManifestPage');
 
@@ -1283,10 +1312,12 @@ class ControllerExtensionShippingHrxM extends Controller
                     return;
                 }
 
-                $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', [
+                $template_data = $this->mergeTranslationsIntoData([
                     'order' => $order,
                     'order_url' => $this->url->link('sale/order/info', $this->getUserToken(), true)
-                ]));
+                ]);
+
+                $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', $template_data));
             }
         } catch (\Throwable $th) {
             $response->setError($th->getMessage());
@@ -1487,10 +1518,12 @@ class ControllerExtensionShippingHrxM extends Controller
                 return;
             }
 
-            $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', [
+            $template_data = $this->mergeTranslationsIntoData([
                 'order' => $order,
                 'order_url' => $this->url->link('sale/order/info', $this->getUserToken(), true)
-            ]));
+            ]);
+
+            $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', $template_data));
         } catch (\Throwable $th) {
             $response->setError($th->getMessage());
         }
@@ -1643,10 +1676,12 @@ class ControllerExtensionShippingHrxM extends Controller
                 return;
             }
 
-            $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', [
+            $template_data = $this->mergeTranslationsIntoData([
                 'order' => $order,
                 'order_url' => $this->url->link('sale/order/info', $this->getUserToken(), true)
-            ]));
+            ]);
+
+            $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', $template_data));
         } catch (\Throwable $th) {
             $response->setError($th->getMessage());
         }
@@ -1734,10 +1769,12 @@ class ControllerExtensionShippingHrxM extends Controller
                 return;
             }
 
-            $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', [
+            $template_data = $this->mergeTranslationsIntoData([
                 'order' => $order,
                 'order_url' => $this->url->link('sale/order/info', $this->getUserToken(), true)
-            ]));
+            ]);
+
+            $response->addData('html', $this->load->view('extension/shipping/' . Params::SETTINGS_CODE . '/partial/manifest_list_row', $template_data));
         } catch (\Throwable $th) {
             $response->setError($th->getMessage());
         }
@@ -1752,7 +1789,8 @@ class ControllerExtensionShippingHrxM extends Controller
             return null;
         }
 
-        $this->load->language('extension/shipping/hrx_m');
+        $this->hrx_translations = $this->load->language('extension/shipping/hrx_m');
+        $data = $this->mergeTranslationsIntoData([]);
 
         $data['order_data'] = array_filter($order_data, function ($key) {
             return !in_array($key, ['header', 'footer', 'column_left']);
@@ -1781,7 +1819,8 @@ class ControllerExtensionShippingHrxM extends Controller
 
     public function getOrderPanelPartial($order_id, ?Order $hrx_order = null)
     {
-        $this->load->language('extension/shipping/hrx_m');
+        $this->hrx_translations = $this->load->language('extension/shipping/hrx_m');
+        $data = $this->mergeTranslationsIntoData([]);
 
         if (!$hrx_order) {
             $id_language = (int) $this->config->get('config_language_id');
@@ -1840,10 +1879,10 @@ class ControllerExtensionShippingHrxM extends Controller
 
         $data['events_partial'] = $this->load->view(
             'extension/shipping/hrx_m/partial/order_panel_tracking_partial',
-            [
+            $this->mergeTranslationsIntoData([
                 'track_events' => [],
                 'is_placeholder' => true
-            ]
+            ])
         );
 
         return $this->load->view('extension/shipping/hrx_m/partial/order_panel_partial', $data);
@@ -2054,10 +2093,10 @@ class ControllerExtensionShippingHrxM extends Controller
                 'html',
                 $this->load->view(
                     'extension/shipping/hrx_m/partial/order_panel_tracking_partial',
-                    [
+                    $this->mergeTranslationsIntoData([
                         'track_events' => $tracking_events,
                         'is_placeholder' => false
-                    ]
+                    ])
                 )
             );
         } catch (\Throwable $th) {

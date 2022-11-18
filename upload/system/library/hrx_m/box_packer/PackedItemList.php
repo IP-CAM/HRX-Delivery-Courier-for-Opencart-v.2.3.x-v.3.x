@@ -26,11 +26,11 @@ class PackedItemList implements Countable, IteratorAggregate
     /**
      * @var PackedItem[]
      */
-    private array $list = [];
+    private $list = [];
 
-    private int $weight = 0;
+    private $weight = 0;
 
-    private bool $isSorted = false;
+    private $isSorted = false;
 
     public function insert(PackedItem $item): void
     {
@@ -68,7 +68,9 @@ class PackedItemList implements Countable, IteratorAggregate
      */
     public function asItemArray(): array
     {
-        return array_map(fn (PackedItem $packedItem) => $packedItem->getItem(), $this->list);
+        return array_map(function (PackedItem $packedItem) { 
+            return $packedItem->getItem();
+        }, $this->list);
     }
 
     /**

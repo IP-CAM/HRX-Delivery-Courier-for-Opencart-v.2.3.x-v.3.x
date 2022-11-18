@@ -25,29 +25,29 @@ class OrientatedItemSorter
     /**
      * @var array<string, int>
      */
-    protected static array $lookaheadCache = [];
+    protected static $lookaheadCache = [];
 
-    private OrientatedItemFactory $orientatedItemFactory;
+    private $orientatedItemFactory;
 
-    private bool $singlePassMode;
+    private $singlePassMode;
 
-    private int $widthLeft;
+    private $widthLeft;
 
-    private int $lengthLeft;
+    private $lengthLeft;
 
-    private int $depthLeft;
+    private $depthLeft;
 
-    private int $rowLength;
+    private $rowLength;
 
-    private int $x;
+    private $x;
 
-    private int $y;
+    private $y;
 
-    private int $z;
+    private $z;
 
-    private ItemList $nextItems;
+    private $nextItems;
 
-    private PackedItemList $prevPackedItemList;
+    private $prevPackedItemList;
 
     public function __construct(OrientatedItemFactory $factory, bool $singlePassMode, int $widthLeft, int $lengthLeft, int $depthLeft, ItemList $nextItems, int $rowLength, int $x, int $y, int $z, PackedItemList $prevPackedItemList)
     {

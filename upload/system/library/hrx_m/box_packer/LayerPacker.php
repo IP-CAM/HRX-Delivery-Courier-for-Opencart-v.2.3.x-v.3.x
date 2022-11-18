@@ -20,13 +20,13 @@ use function sort;
  */
 class LayerPacker //implements LoggerAwareInterface
 {
-    private Box $box;
+    private $box;
 
-    private bool $singlePassMode = false;
+    private $singlePassMode = false;
 
-    private OrientatedItemFactory $orientatedItemFactory;
+    private $orientatedItemFactory;
 
-    private bool $beStrictAboutItemOrdering = false;
+    private $beStrictAboutItemOrdering = false;
 
     public function __construct(Box $box)
     {

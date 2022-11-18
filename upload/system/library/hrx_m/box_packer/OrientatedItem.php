@@ -20,25 +20,25 @@ use function sort;
  */
 class OrientatedItem implements JsonSerializable
 {
-    protected Item $item;
+    protected $item;
 
-    protected int $width;
+    protected $width;
 
-    protected int $length;
+    protected $length;
 
-    protected int $depth;
+    protected $depth;
 
-    protected int $surfaceFootprint;
+    protected $surfaceFootprint;
 
     /**
      * @var array<string, bool>
      */
-    protected static array $stabilityCache = [];
+    protected static $stabilityCache = [];
 
     /**
      * @var int[]
      */
-    protected array $dimensionsAsArray;
+    protected $dimensionsAsArray;
 
     public function __construct(Item $item, int $width, int $length, int $depth)
     {

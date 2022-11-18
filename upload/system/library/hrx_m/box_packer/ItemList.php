@@ -33,15 +33,15 @@ class ItemList implements Countable, IteratorAggregate
     /**
      * @var Item[]
      */
-    private array $list = [];
+    private $list = [];
 
-    private bool $isSorted = false;
+    private $isSorted = false;
 
-    private ItemSorter $sorter;
+    private $sorter;
 
-    private ?bool $hasConstrainedItems = null;
+    private $hasConstrainedItems = null;
 
-    private ?bool $hasNoRotationItems = null;
+    private $hasNoRotationItems = null;
 
     public function __construct(?ItemSorter $sorter = null)
     {

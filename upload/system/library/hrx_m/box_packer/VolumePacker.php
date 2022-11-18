@@ -20,21 +20,21 @@ use function usort;
  */
 class VolumePacker //implements LoggerAwareInterface
 {
-    protected Box $box;
+    protected $box;
 
-    protected ItemList $items;
+    protected $items;
 
-    protected bool $singlePassMode = false;
+    protected $singlePassMode = false;
 
-    protected bool $packAcrossWidthOnly = false;
+    protected $packAcrossWidthOnly = false;
 
-    private LayerPacker $layerPacker;
+    private $layerPacker;
 
-    protected bool $beStrictAboutItemOrdering = false;
+    protected $beStrictAboutItemOrdering = false;
 
-    private bool $hasConstrainedItems = false;
+    private $hasConstrainedItems = false;
 
-    private bool $hasNoRotationItems = false;
+    private $hasNoRotationItems = false;
 
     public function __construct(Box $box, ItemList $items)
     {

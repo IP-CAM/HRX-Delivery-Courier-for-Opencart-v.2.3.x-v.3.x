@@ -1,18 +1,18 @@
-<tr data-row-category-id="{{ category_id }}" data-parcel-default="{% if hrx_parcel_default %}{{ hrx_parcel_default.getAttributesJsonAsBase64() }}{% endif %}">
-	<td>{{ category_id }}</td>
-	<td data-category-name>{{ name }}</td>
+<tr data-row-category-id="{{ oc_category_row['category_id'] }}" data-parcel-default="{% if oc_category_row['hrx_parcel_default'] %}{{ oc_category_row['hrx_parcel_default'].getAttributesJsonAsBase64() }}{% endif %}">
+	<td>{{ oc_category_row['category_id'] }}</td>
+	<td data-category-name>{{ oc_category_row['name'] }}</td>
 	<td>
-		{% if hrx_parcel_default %}
-			<span class="has-parcel-default">{{ hrx_parcel_default.length }} x {{ hrx_parcel_default.width }} x {{ hrx_parcel_default.height }}, {{ hrx_parcel_default.weight }}kg</span>
+		{% if oc_category_row['hrx_parcel_default'] %}
+			<span class="has-parcel-default">{{ oc_category_row['hrx_parcel_default'].length }} x {{ oc_category_row['hrx_parcel_default'].width }} x {{ oc_category_row['hrx_parcel_default'].height }}, {{ oc_category_row['hrx_parcel_default'].weight }}kg</span>
 		{% else %}
 			<span class="no-parcel-default"></span>
 		{% endif %}
 	</td>
 	<td>
-		<button data-modal="#parcel_default_modal" type="button" class="btn btn-default" data-parcel-default-edit="{{ category_id }}">{{ hrx_m_pd_btn_edit }}</button>
+		<button data-modal="#parcel_default_modal" type="button" class="btn btn-default" data-parcel-default-edit="{{ oc_category_row['category_id'] }}">{{ hrx_m_pd_btn_edit }}</button>
 
-		{% if hrx_parcel_default %}
-			<button type="button" class="btn btn-default" data-parcel-default-reset="{{ category_id }}">{{ hrx_m_pd_btn_reset }}</button>
+		{% if oc_category_row['hrx_parcel_default'] %}
+			<button type="button" class="btn btn-default" data-parcel-default-reset="{{ oc_category_row['category_id'] }}">{{ hrx_m_pd_btn_reset }}</button>
 		{% endif %}
 	</td>
 </tr>

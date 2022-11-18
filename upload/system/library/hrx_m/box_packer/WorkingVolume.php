@@ -17,13 +17,13 @@ use JsonSerializable;
  */
 class WorkingVolume implements Box, JsonSerializable
 {
-    private int $width;
+    private $width;
 
-    private int $length;
+    private $length;
 
-    private int $depth;
+    private $depth;
 
-    private int $maxWeight;
+    private $maxWeight;
 
     public function __construct(
         int $width,

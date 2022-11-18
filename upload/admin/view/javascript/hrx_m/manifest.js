@@ -155,7 +155,7 @@ var HRX_M_MANIFEST = {
                 });
             }
 
-            if (json.data.errors) {
+            if (json.data.errors && json.data.errors.length > 0) {
                 const errorMsgs = Object.keys(json.data.errors).map(key => {
                     return `ID ${key}: ${json.data.errors[key]}`;
                 });

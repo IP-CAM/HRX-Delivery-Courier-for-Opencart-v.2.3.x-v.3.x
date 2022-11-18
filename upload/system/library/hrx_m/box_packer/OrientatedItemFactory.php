@@ -19,14 +19,14 @@ use function usort;
  */
 class OrientatedItemFactory //implements LoggerAwareInterface
 {
-    protected Box $box;
+    protected $box;
 
-    protected bool $singlePassMode = false;
+    protected $singlePassMode = false;
 
     /**
      * @var array<string, bool>
      */
-    protected static array $emptyBoxStableItemOrientationCache = [];
+    protected static $emptyBoxStableItemOrientationCache = [];
 
     public function __construct(Box $box)
     {

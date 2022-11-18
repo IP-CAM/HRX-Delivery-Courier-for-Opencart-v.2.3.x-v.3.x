@@ -22,13 +22,13 @@ use function urlencode;
  */
 class PackedBox implements JsonSerializable
 {
-    protected Box $box;
+    protected $box;
 
-    protected PackedItemList $items;
+    protected $items;
 
-    protected int $itemWeight = 0;
+    protected $itemWeight = 0;
 
-    protected float $volumeUtilisation;
+    protected $volumeUtilisation;
 
     /**
      * Get box used.

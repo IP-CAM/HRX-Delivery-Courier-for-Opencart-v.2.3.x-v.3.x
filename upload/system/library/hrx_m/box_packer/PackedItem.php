@@ -16,19 +16,19 @@ use JsonSerializable;
  */
 class PackedItem implements JsonSerializable
 {
-    protected int $x;
+    protected $x;
 
-    protected int $y;
+    protected $y;
 
-    protected int $z;
+    protected $z;
 
-    protected Item $item;
+    protected $item;
 
-    protected int $width;
+    protected $width;
 
-    protected int $length;
+    protected $length;
 
-    protected int $depth;
+    protected $depth;
 
     public function __construct(Item $item, int $x, int $y, int $z, int $width, int $length, int $depth)
     {
