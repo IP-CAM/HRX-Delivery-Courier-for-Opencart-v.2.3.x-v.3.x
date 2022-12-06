@@ -194,7 +194,7 @@ class DeliveryPoint implements JsonSerializable, DeliveryPointInterface
                 'lng' => $this->longitude
             ],
             // "name" => $this->address, // for now empty name to see how it looks on map
-            "identifier" => Params::SETTINGS_CODE // use module internal identifier
+            "identifier" => Params::SETTINGS_CODE . '_' . strtolower($this->country) // use module internal identifier
         ];
     }
 
@@ -238,8 +238,7 @@ class DeliveryPoint implements JsonSerializable, DeliveryPointInterface
         }
         $sql = "
             SELECT DISTINCT hmdp.`country` as `iso_code_2` FROM `" . DbTables::TABLE_DELIVERY_POINT . "` hmdp 
-            WHERE hmdp.`country` IS NOT NULL " . $where
-        ;
+            WHERE hmdp.`country` IS NOT NULL " . $where;
 
         $result = $db->query($sql);
 

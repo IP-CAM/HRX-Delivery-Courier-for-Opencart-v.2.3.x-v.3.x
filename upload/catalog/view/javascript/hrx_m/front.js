@@ -107,7 +107,15 @@ console.log('valid selection', hasSelection ? true : false);
             .sub('tmjs-ready', tm => {
                 // tm.dom.UI.container.querySelector('.tmjs-selected-terminal').classList.add('hidden');
                 // add in custom icon
+                HRX_M.tmjs.map.createIcon('default', 'https://mijora.ams3.digitaloceanspaces.com/hrx/hrx/default.png');
                 HRX_M.tmjs.map.createIcon('hrx_m', 'image/catalog/hrx_m/hrx-icon.svg');
+                HRX_M.tmjs.map.createIcon('hrx_m_ee', 'https://mijora.ams3.digitaloceanspaces.com/hrx/hrx/EE.png');
+                HRX_M.tmjs.map.createIcon('hrx_m_fi', 'https://mijora.ams3.digitaloceanspaces.com/hrx/hrx/FI.png');
+                HRX_M.tmjs.map.createIcon('hrx_m_lt', 'https://mijora.ams3.digitaloceanspaces.com/hrx/hrx/LT.png');
+                HRX_M.tmjs.map.createIcon('hrx_m_lv', 'https://mijora.ams3.digitaloceanspaces.com/hrx/hrx/LV.png');
+                HRX_M.tmjs.map.createIcon('hrx_m_pl', 'https://mijora.ams3.digitaloceanspaces.com/hrx/hrx/PL.png');
+                HRX_M.tmjs.map.createIcon('hrx_m_se', 'https://mijora.ams3.digitaloceanspaces.com/hrx/hrx/SE.png');
+
                 // need to refresh icons
                 HRX_M.tmjs.map.refreshMarkerIcons();
 

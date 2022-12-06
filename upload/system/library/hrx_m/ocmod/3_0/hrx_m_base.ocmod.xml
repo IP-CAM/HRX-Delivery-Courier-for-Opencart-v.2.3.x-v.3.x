@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <modification>
     <name>HRX Base Mod for OC3</name>
-    <version>0.0.13</version>
+    <version>0.0.14</version>
     <author>Mijora</author>
     <link>https://www.mijora.lt</link>
     <code>hrx_m_base</code>
@@ -169,7 +169,7 @@
 
                     $this->document->addScript('catalog/view/javascript/hrx_m/terminal-mapping.js?20220401');
                     $this->document->addScript('catalog/view/javascript/hrx_m/common.js?20220401');
-                    $this->document->addScript('catalog/view/javascript/hrx_m/front.js?20220401');
+                    $this->document->addScript('catalog/view/javascript/hrx_m/front.js?20221206');
                 }
                 // HRX_M END    
             ]]></add>
