@@ -11,7 +11,7 @@ const HRX_M = {
         crossOrigin: ''
     },
 
-    isValidLocationSelection: function() {
+    isValidLocationSelection: function () {
         const terminalOptionEl = document.querySelector('input[name="shipping_method"][data-hrx-m-input]:checked');
         if (!terminalOptionEl) {
             return true;
@@ -26,7 +26,7 @@ const HRX_M = {
                 message: hrx_m_js_translation.no_terminal_selected
             });
         }
-console.log('valid selection', hasSelection ? true : false);
+
         return hasSelection ? true : false;
     },
 
@@ -102,6 +102,7 @@ console.log('valid selection', hasSelection ? true : false);
         let newInput = this.buildForBasicOpencart3_0(inputs);
 
         this.tmjs = new TerminalMappingHrx();
+        this.tmjs.prefix = '[ HRX_M TMJS ] ';
         this.tmjs.setImagesPath('image/catalog/hrx_m/');
         this.tmjs
             .sub('tmjs-ready', tm => {
@@ -206,6 +207,12 @@ console.log('valid selection', hasSelection ? true : false);
         return url.split('/').pop().replace(/\./gi, '-').toLowerCase();
     },
 
+    doNotBlockFn: function (customFn) {
+        setTimeout(() => {
+            customFn();
+        }, 1);
+    },
+
     loadScript: function (urlData, callback) {
         let script_id = this.makeIdFromUrl(urlData.src);
 
@@ -220,17 +227,35 @@ console.log('valid selection', hasSelection ? true : false);
         script.type = "text/javascript";
         script.id = script_id;
 
+        let originalFn = null;
+
         if (script.readyState) {  //IE
+            if (typeof script.onreadystatechange === 'function') {
+                originalFn = script.onreadystatechange;
+            }
             script.onreadystatechange = function () {
                 if (script.readyState == "loaded" ||
                     script.readyState == "complete") {
                     script.onreadystatechange = null;
-                    callback();
+
+                    if (originalFn) {
+                        HRX_M.doNotBlockFn(originalFn);
+                    }
+
+                    HRX_M.doNotBlockFn(callback);
                 }
             };
         } else {  //Others
+            if (typeof script.onload === 'function') {
+                originalFn = script.onload;
+            }
+
             script.onload = function () {
-                callback();
+                if (originalFn) {
+                    HRX_M.doNotBlockFn(originalFn);
+                }
+
+                HRX_M.doNotBlockFn(callback);
             };
         }
 
