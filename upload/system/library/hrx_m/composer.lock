@@ -11,13 +11,13 @@
             "version": "dev-main",
             "source": {
                 "type": "git",
-                "url": "git@github.com:mijora/hrx-api.git",
-                "reference": "4d95dafb894ba57eb1ddb4bc1665d0f90111c5c1"
+                "url": "https://github.com/hrx-plugin/hrx-api.git",
+                "reference": "91a66d098ce9ecc4c5e482d5ec7690e03968545d"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/mijora/hrx-api/zipball/4d95dafb894ba57eb1ddb4bc1665d0f90111c5c1",
-                "reference": "4d95dafb894ba57eb1ddb4bc1665d0f90111c5c1",
+                "url": "https://api.github.com/repos/hrx-plugin/hrx-api/zipball/91a66d098ce9ecc4c5e482d5ec7690e03968545d",
+                "reference": "91a66d098ce9ecc4c5e482d5ec7690e03968545d",
                 "shasum": ""
             },
             "require": {
@@ -42,10 +42,10 @@
             ],
             "description": "Library for HRX Api",
             "support": {
-                "source": "https://github.com/mijora/hrx-api/tree/v1.0.2",
-                "issues": "https://github.com/mijora/hrx-api/issues"
+                "source": "https://github.com/hrx-plugin/hrx-api/tree/v1.0.3",
+                "issues": "https://github.com/hrx-plugin/hrx-api/issues"
             },
-            "time": "2022-08-17T13:02:40+00:00"
+            "time": "2023-07-19T11:17:26+00:00"
         }
     ],
     "packages-dev": [],
