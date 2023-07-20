@@ -2,7 +2,7 @@
 // Text
 $_['text_title'] = 'HRX Delivery';
 $_['hrx_m_quote_terminal_title_prefix'] = 'HRX Delivery: ';
-$_['hrx_m_quote_title_courier'] = 'HRX Delivery: Courier';
+$_['hrx_m_quote_title_courier'] = 'Courier';
 
 
 // JS Strings
@@ -27,4 +27,4 @@ $_['hrx_m_js_back_to_list_btn'] = 'reset search';
 $_['hrx_m_js_no_information'] = 'No information';
 // For front.js
 $_['hrx_m_js_no_terminal_selected'] = 'Please select HRX Delivery location!';
-$_['hrx_m_js_shipping_method_terminal'] = 'HRX Delivery Location';
+$_['hrx_m_js_shipping_method_terminal'] = 'Delivery to Parcel Pickup point';
