@@ -4,7 +4,7 @@ namespace Mijora\HrxOpencart;
 
 class Params
 {
-    const VERSION = '1.0.1';
+    const VERSION = '1.0.2';
 
     const PREFIX = 'hrx_m_';
 
